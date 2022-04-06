@@ -13,8 +13,10 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
-import tkvue
 import pkg_resources
+
+import tkvue
+
 
 class RootDialog(tkvue.Component):
     template = """
@@ -25,12 +27,7 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context(
-        {
-            "show": True,
-            "icon_path": pkg_resources.resource_filename(__name__, "preloader.gif")
-        }
-    )
+    data = tkvue.Context({"show": True, "icon_path": pkg_resources.resource_filename(__name__, "preloader.gif")})
 
 
 if __name__ == "__main__":

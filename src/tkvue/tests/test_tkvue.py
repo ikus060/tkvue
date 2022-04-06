@@ -40,6 +40,7 @@ def new_dialog(cls):
     try:
         yield dlg
     finally:
+        dlg.pump_events()
         dlg.destroy()
         dlg.pump_events()
 
@@ -193,9 +194,17 @@ class DataTest(unittest.TestCase):
         self.assertEqual(self.last_value, False)
 
 
+class CustomComponent(tkvue.Component):
+    template = """
+    <Frame pack-fill="x" pack-expand="1">
+        <Label text="tet in component" />
+    </Frame>
+    """
+
+
 class Dialog(tkvue.Component):
     template = """
-    <TopLevel>
+    <TopLevel geometry="500x500" title="My Dialog">
         <Frame pack-fill="x" pack-expand="1">
             <!-- Single and dual binding -->
             <Entry id="entry" textvariable="{{text_value}}" />
@@ -214,8 +223,16 @@ class Dialog(tkvue.Component):
             <Combobox id="combo" textvariable="{{selected_color}}" values="blue red green" />
         </Frame>
         <Frame pack-fill="x" pack-expand="1">
-            <Checkbutton id="checkbutton" text="foo" selected="{{checkbutton_selected}}" command="checkbutton_invoke"/>
+            <Radiobutton id="one" variable="{{selected_number}}" value="1" text="1"/>
+            <Radiobutton id="two" variable="{{selected_number}}" value="2" text="2"/>
+            <Radiobutton id="three" variable="{{selected_number}}" value="3" text="3"/>
         </Frame>
+        <Frame pack-fill="x" pack-expand="1">
+            <Checkbutton id="checkbutton" text="foo" selected="{{checkbutton_selected}}" command="checkbutton_invoke"/>
+            <Checkbutton id="checkbutton2" text="foo" variable="{{checkbutton_selected}}"/>
+            <Checkbutton id="checkbutton3" text="foo" selected="{{checkbutton_selected}}" command="funcation_call_with_args('arg1')"/>
+        </Frame>
+        <CustomComponent></CustomComponent>
     </TopLevel>
     """
 
@@ -226,6 +243,7 @@ class Dialog(tkvue.Component):
                 "button_visible": True,
                 "names": ["patrik", "annik", "michel", "denise"],
                 "selected_color": "blue",
+                "selected_number": 1,
                 "checkbutton_selected": True,
             }
         )
@@ -233,6 +251,9 @@ class Dialog(tkvue.Component):
 
     def checkbutton_invoke(self):
         self.data.checkbutton_selected = not self.data.checkbutton_selected
+
+    def funcation_call_with_args(self, value):
+        self.value = value
 
 
 class DialogWithImage(tkvue.Component):
@@ -251,7 +272,8 @@ class DialogWithImage(tkvue.Component):
 class DialogWithTextWrap(tkvue.Component):
     template = """
     <TopLevel>
-        <Label id="label1" text="Text with wrapping" wrap="1" width="5"/>
+        <Label id="label1" text="Text with wrapping" wrap="0" width="5"/>
+        <Label id="label2" text="Text with wrapping" wrap="1" width="5"/>
     </TopLevel>
     """
 
@@ -288,11 +310,38 @@ class DialogWithScrolledFrame(tkvue.Component):
     """
 
 
+class DialogWithInvalidCommand(tkvue.Component):
+    template = """
+    <Frame>
+        <Checkbutton id="checkbutton" text="foo" selected="True" command="invalid_command"/>
+    </Frame>
+    """
+
+
+class DialogWithBindingCommand(tkvue.Component):
+    template = """
+    <Frame>
+        <Checkbutton id="checkbutton" text="foo" selected="True" command="{{my_command}}"/>
+    </Frame>
+    """
+
+    def my_command(self):
+        pass
+
+
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
 class ComponentTest(unittest.TestCase):
     def test_open_close(self):
+        # Given a dialog with a geometry and a title
         with new_dialog(Dialog) as dlg:
+            # When opening the dialog
             dlg.pump_events()
+            # Then dialog has the right geometry
+            self.assertRegexpMatches(dlg.root.winfo_geometry(), '^500x500.*')
+            # Then the dialog has a title
+            self.assertEqual('My Dialog', dlg.root.title())
+            # Then the dialog has the default class
+            self.assertEqual('Tkvue', dlg.root.winfo_class())
 
     def test_simple_binding(self):
         # Given a dialog with a simple binding
@@ -301,7 +350,7 @@ class ComponentTest(unittest.TestCase):
             self.assertEqual("foo", dlg.label.cget("text"))
             # When updating the value of the context
             dlg.data.text_value = "bar"
-            # Then thw widget get updated
+            # Then the widget get updated
             self.assertEqual("bar", dlg.label.cget("text"))
 
     @unittest.skipIf(IS_WINDOWS, "fail to reliably force focus on windows")
@@ -348,7 +397,7 @@ class ComponentTest(unittest.TestCase):
             # Then the dialog get updated
             self.assertEqual(2, len(dlg.people.winfo_children()))
 
-    def test_dual_binding_combo_and_radio(self):
+    def test_dual_binding_select_text(self):
         # Given a dialog with a for loop
         with new_dialog(Dialog) as dlg:
             dlg.pump_events()
@@ -358,17 +407,29 @@ class ComponentTest(unittest.TestCase):
             # Then radio button get updated
             self.assertEqual("red", dlg.data.selected_color)
 
+    def test_dual_binding_select_number(self):
+        # Given a dialog with a for loop
+        with new_dialog(Dialog) as dlg:
+            dlg.pump_events()
+            # When selecting an item with radio
+            dlg.three.invoke()
+            dlg.pump_events()
+            # Then radio button get updated
+            self.assertEqual(3, dlg.data.selected_number)
+
     @unittest.skipIf(IS_MAC, "this fail on MacOS when running in test suite")
     def test_checkbutton_selected(self):
         # Given a dialog with checkbutton binded with `selected` attribute
         with new_dialog(Dialog) as dlg:
             dlg.pump_events()
             self.assertEqual(dlg.checkbutton.state(), ("selected",))
+            self.assertEqual(dlg.checkbutton2.state(), ("selected",))
             # When updating checkbutton_selected value
             dlg.data.checkbutton_selected = False
             dlg.pump_events()
             # Then the widget get updated
             self.assertEqual(dlg.checkbutton.state(), tuple())
+            self.assertEqual(dlg.checkbutton2.state(), tuple())
 
     @unittest.skipIf(IS_MAC, "this fail on MacOS when running in test suite")
     def test_checkbutton_selected_command(self):
@@ -376,6 +437,7 @@ class ComponentTest(unittest.TestCase):
         with new_dialog(Dialog) as dlg:
             dlg.pump_events()
             self.assertEqual(dlg.checkbutton.state(), ("selected",))
+            self.assertEqual(dlg.checkbutton2.state(), ("selected",))
             # When cliking on checkbutton
             dlg.checkbutton.focus_set()
             dlg.checkbutton.invoke()
@@ -384,6 +446,7 @@ class ComponentTest(unittest.TestCase):
             # Then the widget status get toggled.
             self.assertEqual(dlg.data.checkbutton_selected, False)
             self.assertEqual(dlg.checkbutton.state(), tuple())
+            self.assertEqual(dlg.checkbutton2.state(), tuple())
             # When cliking on checkbutton again
             dlg.checkbutton.focus_set()
             dlg.checkbutton.invoke()
@@ -392,6 +455,7 @@ class ComponentTest(unittest.TestCase):
             # Then the widget status get toggled.
             self.assertEqual(dlg.data.checkbutton_selected, True)
             self.assertEqual(dlg.checkbutton.state(), ("selected",))
+            self.assertEqual(dlg.checkbutton2.state(), ("selected",))
 
     def test_image_path(self):
         with new_dialog(DialogWithImage) as dlg:
@@ -403,6 +467,25 @@ class ComponentTest(unittest.TestCase):
             # Then Button and Label get update with an image
             self.assertTrue(dlg.button.cget("image")[0].startswith("pyimage"))
             self.assertTrue(dlg.label.cget("image")[0].startswith("pyimage"))
+
+    def test_image_path_with_gif(self):
+        with new_dialog(DialogWithImage) as dlg:
+            # Given a dialog with image
+            self.assertEqual("", dlg.button.cget("image"))
+            self.assertEqual("", dlg.label.cget("image"))
+            # When settings image_path
+            dlg.data["image_path"] = pkg_resources.resource_filename(__name__, "preloader.gif")
+            # Then Button and Label get update with an image
+            self.assertTrue(dlg.button.cget("image")[0].startswith("pyimage"))
+            self.assertTrue(dlg.label.cget("image")[0].startswith("pyimage"))
+
+    @unittest.skipIf(IS_WINDOWS, "Not working on Windows CICD")
+    def test_text_wrap(self):
+        # Given a dialog with text wrap enabled
+        with new_dialog(DialogWithTextWrap) as dlg:
+            dlg.pump_events()
+            # Then label2 text is displayed on multiple line.
+            self.assertGreater(dlg.label2.winfo_height(), dlg.label1.winfo_height() * 2)
 
     def test_tooltip(self):
         # Given a dialog with tooltip
@@ -445,3 +528,32 @@ class ComponentTest(unittest.TestCase):
     def test_scrolled_frame(self):
         with new_dialog(DialogWithScrolledFrame) as dlg:
             dlg.pump_events()
+
+    def test_command_invalid(self):
+        # Given a dialog with an invalid command name
+        # When trying to create the dialog
+        # Then an exception is raised
+        with self.assertRaises(tkvue.TemplateError) as ctx:
+            with new_dialog(DialogWithInvalidCommand) as dlg:
+                dlg.pump_events()
+        self.assertIn('command', str(ctx.exception))
+
+    def test_command_with_binding(self):
+        # Given a dialog with an invalid binding
+        # When trying to create the dialog
+        # Then an exception is raised
+        with self.assertRaises(tkvue.TemplateError) as ctx:
+            with new_dialog(DialogWithBindingCommand) as dlg:
+                dlg.pump_events()
+        self.assertIn('command', str(ctx.exception))
+
+    def test_command_with_arguments(self):
+        # Given a dialog with a command with arguments
+        with new_dialog(Dialog) as dlg:
+            dlg.pump_events()
+            # When invoking the check button
+            dlg.checkbutton3.focus_set()
+            dlg.checkbutton3.invoke()
+            dlg.pump_events()
+            # Then function get called
+            self.assertEqual('arg1', dlg.value)

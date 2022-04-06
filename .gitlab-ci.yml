@@ -1,10 +1,11 @@
+image: python:3-bullseye
+
 stages:
 - test
 - bdist
 - upload
 
 .tox:  &tox
-  image: python:3-bullseye
   stage: test
   variables:
     TOXENV: $CI_JOB_NAME
@@ -30,19 +31,24 @@ isort:
   <<: *tox
 
 linux:
-  variables:
-    TOXENV: py3
   <<: *tox
+  before_script:
+  - apt update && apt -y --no-install-recommends install xvfb xauth
+  - pip install tox
+  artifacts:
+    paths:
+    - coverage-*.xml
+    - xunit-*.xml
+    expire_in: 1 day
 
 win32:
   before_script:
-  - choco install python3 --version=3.7.9 -y -f --forcex86
+  - choco install python3 --version=3.7.9 -y -f --forcex86 --source "'https://nexus.ikus-soft.com/repository/choco/'"
   - $Env:path += ";C:\Python37\Scripts\;C:\Python37\;"
   - $Env:path
   - python.exe -VV
   - pip.exe install tox
   script:
-  - cd minarca-client
   - tox.exe
   stage: test
   tags:
@@ -57,7 +63,6 @@ win32:
 
 macos:
   script:
-  - cd minarca-client
   - tox
   stage: test
   tags:
@@ -89,7 +94,7 @@ upload:sonar:
   variables:
     SONAR_PROJECT_BASE_DIR: "${CI_PROJECT_DIR}"
   script:
-  - sonar-scanner -X -Dsonar.python.coverage.reportPath=coverage-*.xml -Dsonar.python.xunit.reportPath=xunit-*.xml -Dsonar.host.url=$SONAR_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=$CI_PROJECT_NAME -Dsonar.projectVersion=$(git describe) -Dsonar.exclusions=**/test_*.py -Dsonar.qualitygate.wait=true
+  - sonar-scanner -X -Dsonar.python.coverage.reportPaths=coverage-*.xml -Dsonar.python.xunit.reportPaths=xunit-*.xml -Dsonar.host.url=$SONAR_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=$CI_PROJECT_NAME -Dsonar.projectVersion=$(git describe) -Dsonar.qualitygate.wait=true
 
 upload:wheel:
   stage: upload

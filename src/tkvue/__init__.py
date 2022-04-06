@@ -26,7 +26,7 @@ _default_basename = None
 _default_classname = "Tkvue"
 _default_screenname = None
 _default_icons = None
-_default_theme = "clam"
+_default_theme = None
 _default_theme_source = None
 
 
@@ -35,7 +35,7 @@ def configure_tk(
     classname="Tk",
     screenname=None,
     icon=[],
-    theme="clam",
+    theme=None,
     theme_source=None,
 ):
     """
@@ -279,7 +279,22 @@ def _configure_image(widget, image_path):
         if widget.winfo_ismapped():
             widget.configure(image=widget.frames[widget.frame])
         # Register next animation.
-        widget.event_id = widget.after(150, _next_frame)
+        widget._event_id = widget.after(150, _next_frame)
+
+    def _stop_animation(unused=None):
+        if getattr(widget, "_func_id", None):
+            widget.unbind("<Destroy>", widget._func_id)
+            del widget._func_id
+
+        if getattr(widget, "_event_id", None):
+            widget.after_cancel(widget._event_id)
+            del widget._event_id
+
+    def _start_animation(unused=None):
+        if not getattr(widget, "_event_id", None):
+            widget._event_id = widget.after(100, _next_frame)
+        if not getattr(widget, "_func_id", None):
+            widget._func_id = widget.bind("<Destroy>", _stop_animation)
 
     # Check if image_path is the same.
     if getattr(widget, "image_path", None) == image_path:
@@ -307,11 +322,11 @@ def _configure_image(widget, image_path):
     # Update widget image with first frame.
     widget.frame = 0
     widget.configure(image=widget.frames[0])
-    # Register animation.
+
     if len(widget.frames) > 1:
-        widget.event_id = widget.after(100, _next_frame)
-    elif getattr(widget, "event_id", None):
-        widget.after_cancel(widget.event_id)
+        _start_animation()
+    else:
+        _stop_animation()
 
 
 def _configure_wrap(widget, wrap):
@@ -569,6 +584,14 @@ def getwidget(name):
     return _components.get(name, None)
 
 
+class TemplateError(Exception):
+    """
+    Raised when trying to create the component.
+    """
+
+    pass
+
+
 class Element(object):
     """
     HTML element
@@ -747,17 +770,23 @@ class TkVue:
         Command may only be define when creating widget.
         So let process this attribute before creating the widget.
         """
-        assert not value.startswith("{{"), "command attributes doesn't support bindind"
-        funcs = {k: getattr(self.component, k) for k in dir(self.component) if callable(getattr(self.component, k))}
+        if value.startswith("{{"):
+            raise ValueError("cannot use binding ({{) in `command` attribute: " + value)
+        available_functions = {
+            k: getattr(self.component, k) for k in dir(self.component) if callable(getattr(self.component, k))
+        }
         # May need to adjust this to detect expression.
         if "(" in value or "=" in value:
 
             def func():
-                return context.eval(value, **funcs)
+                return context.eval(value, **available_functions)
 
         else:
-            func = funcs.get(value, None)
-            assert func and hasattr(func, "__call__"), "command attribute value should define a function name"
+            func = available_functions.get(value, None)
+            if func is None or not hasattr(func, "__call__"):
+                raise ValueError(
+                    '`command` attribute must define a function to be called `function_name(arg1, arg2)`: ' + value
+                )
         return func
 
     # TODO Make this function static.
@@ -781,7 +810,7 @@ class TkVue:
             # Create the widget with required attributes.
             widget = self._bind_attrs(master, tree.tag, attrs, context)
         except Exception as e:
-            raise Exception(
+            raise TemplateError(
                 str(e)
                 + " for tag <%s %s>"
                 % (
