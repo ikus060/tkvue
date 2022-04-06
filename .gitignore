@@ -1,7 +1,7 @@
-.coverage
-coverage.xml
+.coverage*
+coverage*.xml
 pytestdebug.log
-xunit.xml
+xunit*.xml
 .eggs
 .tox
 __pycache__
