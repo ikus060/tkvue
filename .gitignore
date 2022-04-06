@@ -1,0 +1,9 @@
+.coverage
+coverage.xml
+pytestdebug.log
+xunit.xml
+.eggs
+.tox
+__pycache__
+*.egg-info
+.vscode
