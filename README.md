@@ -8,3 +8,17 @@
 # TKvue
 
 Declarative Tkinter UI using makup language with reactive data binding
+
+# Translation
+
+Tkvue provide a babael extention to extract static text from xml template.
+
+You must configure babel to use the right plugin to extract the values from the templates.
+
+    babel.cfg:
+
+    [tkvue: **/templates/**.html]
+
+Then You may use babel and other gettext tools to complete the translation using the `.po` file.
+
+    python setup.py extract_messages
