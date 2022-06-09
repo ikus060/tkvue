@@ -52,9 +52,7 @@ win32:
   - tox.exe
   stage: test
   tags:
-  - shared-windows
   - windows
-  - windows-1809
   artifacts:
     paths:
     - coverage-*.xml
