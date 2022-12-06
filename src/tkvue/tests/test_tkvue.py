@@ -557,3 +557,10 @@ class ComponentTest(unittest.TestCase):
             dlg.pump_events()
             # Then function get called
             self.assertEqual('arg1', dlg.value)
+
+    def test_mainloop(self):
+        # Given a dialog
+        dlg = Dialog()
+        # Closing windows after .5 seconds
+        dlg.root.after(500, dlg.root.destroy)
+        dlg.mainloop()

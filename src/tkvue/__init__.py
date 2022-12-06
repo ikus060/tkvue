@@ -1,6 +1,7 @@
 # Copyright (C) 2021 IKUS Software inc. All rights reserved.
 # IKUS Software inc. PROPRIETARY/CONFIDENTIAL.
 # Use is subject to license terms.
+import asyncio
 import collections
 import logging
 import os
@@ -837,6 +838,27 @@ class Component:
     def __init__(self, master=None):
         self.root = None
         self.vue = TkVue(self, master=master)
+        # Replace mainloop implementation for TopLevel
+        if hasattr(self.root, 'mainloop'):
+            self.mainloop = self._mainloop
 
     def __getattr__(self, name):
         return getattr(self.root, name)
+
+    def get_event_loop(self):
+        return asyncio.get_event_loop()
+
+    def _mainloop(self):
+        asyncio.run(self._async_mainloop())
+
+    async def _async_mainloop(self):
+        '''
+        An asynchronous implementation of tkinter mainloop
+        '''
+        while True:
+            try:
+                self.root.winfo_exists()  # Throw TclError if the main Windows is destroyed
+                self.root.update()
+            except tkinter.TclError:
+                break
+            await asyncio.sleep(0.01)
