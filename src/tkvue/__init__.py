@@ -499,7 +499,7 @@ class Loop:
 
 class ScrolledFrame(ttk.Frame):
     """
-    Let provide our own Scrolled frame.
+    Let provide our own Scrolled frame supporting styled background color.
     """
 
     def __init__(self, master, *args, **kw):
@@ -541,8 +541,10 @@ class ScrolledFrame(ttk.Frame):
             canvas.unbind_all("<MouseWheel>")  # On Windows
 
         def _update_bg(event):
-            bg = ttk.Style(master=master).lookup("TFrame", "background")
+            style_name = self.cget('style') or 'TFrame'
+            bg = ttk.Style(master=master).lookup(style_name, "background")
             canvas.configure(bg=bg)
+            self.interior.configure(style=style_name)
 
         ttk.Frame.__init__(self, master, *args, **kw)
 
