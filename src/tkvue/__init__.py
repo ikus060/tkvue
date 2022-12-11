@@ -384,8 +384,8 @@ class ToolTip(ttk.Frame):
     def showtip(self):
         if self.tipwindow:
             return
-        x = self.master.winfo_rootx() + self.x
-        y = self.master.winfo_rooty() + self.y
+        x = self.master.winfo_rootx() + self.x + 5
+        y = self.master.winfo_rooty() + self.y + 5
         self.tipwindow = tkinter.Toplevel(self.master)
         try:
             self.tipwindow.wm_overrideredirect(True)
