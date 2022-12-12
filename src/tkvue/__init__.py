@@ -515,12 +515,17 @@ class ScrolledFrame(ttk.Frame):
                 canvas.config(width=interior.winfo_reqwidth())
 
         def _configure_canvas(event):
+            # update the inner frame's width to fill the canvas
             if interior.winfo_reqwidth() != canvas.winfo_width():
-                # update the inner frame's width to fill the canvas
                 canvas.itemconfigure(interior_id, width=canvas.winfo_width())
+            # Show / Hide vertical scrollbar
+            if canvas.yview() == (0.0, 1.0):
+                self.vscrollbar.forget()
+            else:
+                self.vscrollbar.pack(fill=tkinter.Y, side=tkinter.RIGHT, expand=tkinter.FALSE)
 
         def _on_mousewheel(event):
-            # Skip scroll if cvans is bigger then content.
+            # Skip scroll if canvas is bigger then content.
             if canvas.yview() == (0.0, 1.0):
                 return
             # Pick scroll directio dependinds of event <Button-?> or delta value <MouseWheel>
@@ -549,11 +554,10 @@ class ScrolledFrame(ttk.Frame):
         ttk.Frame.__init__(self, master, *args, **kw)
 
         # create a canvas object and a vertical scrollbar for scrolling it
-        vscrollbar = ttk.Scrollbar(self, orient=tkinter.VERTICAL)
-        vscrollbar.pack(fill=tkinter.Y, side=tkinter.RIGHT, expand=tkinter.FALSE)
-        canvas = tkinter.Canvas(self, bd=0, highlightthickness=0, yscrollcommand=vscrollbar.set)
+        self.vscrollbar = ttk.Scrollbar(self, orient=tkinter.VERTICAL)
+        canvas = tkinter.Canvas(self, bd=0, highlightthickness=0, yscrollcommand=self.vscrollbar.set)
         canvas.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.TRUE)
-        vscrollbar.config(command=canvas.yview)
+        self.vscrollbar.config(command=canvas.yview)
 
         # reset the view
         canvas.xview_moveto(0)
