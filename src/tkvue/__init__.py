@@ -664,6 +664,43 @@ class TkVue:
         # Generate the widget from template.
         self.component.root = self._walk(master=master, tree=parser.tree, context=self.component.data)
 
+    def _bind_attr(self, widget, value, func, context):
+        if value.startswith("{{") and value.endswith("}}"):
+            expr = value[2:-2]
+            # Register observer
+            expr_value = context.watch(expr, func)
+            # Assign the value
+            func(expr_value)
+            # Handle disposal
+            widget.bind(
+                "<Destroy>",
+                lambda event, expr=expr, func=func: context.unwatch(expr, func),
+                add="+",
+            )
+        else:
+            # Plain value with evaluation.
+            func(value)
+
+    def _dual_bind_attr(self, widget, value, attr, context):
+        assert value.startswith("{{") and value.endswith("}}")
+        expr = value[2:-2]
+        # Get current variable type.
+        # And create appropriate variable type.
+        var_type = type(context.eval(expr))
+        if var_type == int:
+            var = tkinter.IntVar(master=widget)
+        elif var_type == float:
+            var = tkinter.DoubleVar(master=widget)
+        elif var_type == bool:
+            var = tkinter.BooleanVar(master=widget)
+        else:
+            var = tkinter.StringVar(master=widget)
+        # Support dual-databinding
+        self._bind_attr(widget, value, lambda new_value, var=var: var.set(new_value), context)
+        var.trace_add("write", lambda *args, var=var: context.set(expr, var.get()))
+        # TODO trace_remove
+        widget.configure({attr: var})
+
     def _bind_attrs(self, master, tag, attrs, context):
         """
         Resolve attributes values for the given widget.
@@ -691,72 +728,42 @@ class TkVue:
         if "id" in attrs:
             setattr(self.component, attrs["id"], widget)
 
-        def bind_attr(value, func):
-            if value.startswith("{{") and value.endswith("}}"):
-                expr = value[2:-2]
-                # Register observer
-                expr_value = context.watch(expr, func)
-                # Assign the value
-                func(expr_value)
-                # Handle disposal
-                widget.bind(
-                    "<Destroy>",
-                    lambda event, expr=expr, func=func: context.unwatch(expr, func),
-                    add="+",
-                )
-            else:
-                # Plain value with evaluation.
-                func(value)
-
-        def dual_bind_attr(value, attr):
-            assert value.startswith("{{") and value.endswith("}}")
-            expr = value[2:-2]
-            # Get current variable type.
-            # And create appropriate variable type.
-            var_type = type(context.eval(expr))
-            if var_type == int:
-                var = tkinter.IntVar(master=widget)
-            elif var_type == float:
-                var = tkinter.DoubleVar(master=widget)
-            elif var_type == bool:
-                var = tkinter.BooleanVar(master=widget)
-            else:
-                var = tkinter.StringVar(master=widget)
-            # Support dual-databinding
-            bind_attr(v, lambda new_value, var=var: var.set(new_value))
-            var.trace_add("write", lambda *args, var=var: context.set(expr, var.get()))
-            # TODO trace_remove
-            widget.configure({attr: var})
-
         # Check if args contains pack or :pack
         # If the widget doesn't need to be pack. We don't need to compute changes.
-        if hasattr(widget, "pack"):
-            pack_attrs = {k[5:]: v for k, v in attrs.items() if k.startswith("pack-")}
+        if hasattr(widget, 'pack'):
+            geo = list(set([k.split('-')[0] for k in attrs.keys() if k.startswith("pack-") or k.startswith("place-")]))
+            if len(geo) > 1:
+                raise ValueError('widget can only use a single geometry manager: %s' % geo)
+            geo = geo[0] if geo else 'pack'
+            geo_attrs = {k.split('-')[1]: v for k, v in attrs.items() if k.startswith(geo + "-")}
             if "visible" in attrs:
-                bind_attr(
+                self._bind_attr(
+                    widget,
                     attrs["visible"],
-                    lambda value: widget.pack(pack_attrs) if value else widget.forget(),
+                    lambda value, geo_attrs=geo_attrs, geo=geo: getattr(widget, geo)(geo_attrs)
+                    if value
+                    else widget.forget(),
+                    context,
                 )
             else:
-                widget.pack(pack_attrs)
+                getattr(widget, geo)(geo_attrs)
         for k, v in attrs.items():
-            if k in ["id", "command", "visible"] or k.startswith("pack-"):
+            if k in ["id", "command", "visible"] or k.startswith("pack-") or k.startswith("place-"):
                 # ignore pack attribute
                 continue
             elif k in ["textvariable", "variable"]:
-                dual_bind_attr(v, k)
+                self._dual_bind_attr(widget, v, k, context)
             elif k == "selected":
                 # Special attribute for Button, Checkbutton
-                bind_attr(
-                    v,
-                    lambda value: widget.state(["selected" if value else "!selected", "!alternate"]),
+                self._bind_attr(
+                    widget, v, lambda value: widget.state(["selected" if value else "!selected", "!alternate"]), context
                 )
             elif k in ["text"]:
-                bind_attr(v, lambda value, k=k: widget.configure(**{k: gettext(value)}))
+                self._bind_attr(widget, v, lambda value, k=k: widget.configure(**{k: gettext(value)}), context)
             elif k == "wrap":
-                bind_attr(v, lambda value: _configure_wrap(widget, value))
+                self._bind_attr(widget, v, lambda value: _configure_wrap(widget, value), context)
             elif k == "image":
-                bind_attr(v, lambda value: _configure_image(widget, value))
+                self._bind_attr(widget, v, lambda value: _configure_image(widget, value), context)
             elif k == "geometry":
                 # Defined on TopLevel
                 func = getattr(widget, k, None)
@@ -768,7 +775,7 @@ class TkVue:
                 assert func, f"{k} is not a function of widget"
                 func(gettext(v))
             else:
-                bind_attr(v, lambda value, k=k: widget.configure(**{k: value}))
+                self._bind_attr(widget, v, lambda value, k=k: widget.configure(**{k: value}), context)
 
         return widget
 
