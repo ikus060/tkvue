@@ -1,6 +1,7 @@
 # Copyright (C) 2021 IKUS Software inc. All rights reserved.
 # IKUS Software inc. PROPRIETARY/CONFIDENTIAL.
 # Use is subject to license terms.
+import asyncio
 import collections
 import logging
 import os
@@ -383,8 +384,8 @@ class ToolTip(ttk.Frame):
     def showtip(self):
         if self.tipwindow:
             return
-        x = self.master.winfo_rootx() + self.x
-        y = self.master.winfo_rooty() + self.y
+        x = self.master.winfo_rootx() + self.x + 5
+        y = self.master.winfo_rooty() + self.y + 5
         self.tipwindow = tkinter.Toplevel(self.master)
         try:
             self.tipwindow.wm_overrideredirect(True)
@@ -498,7 +499,7 @@ class Loop:
 
 class ScrolledFrame(ttk.Frame):
     """
-    Let provide our own Scrolled frame.
+    Let provide our own Scrolled frame supporting styled background color.
     """
 
     def __init__(self, master, *args, **kw):
@@ -514,12 +515,17 @@ class ScrolledFrame(ttk.Frame):
                 canvas.config(width=interior.winfo_reqwidth())
 
         def _configure_canvas(event):
+            # update the inner frame's width to fill the canvas
             if interior.winfo_reqwidth() != canvas.winfo_width():
-                # update the inner frame's width to fill the canvas
                 canvas.itemconfigure(interior_id, width=canvas.winfo_width())
+            # Show / Hide vertical scrollbar
+            if canvas.yview() == (0.0, 1.0):
+                self.vscrollbar.forget()
+            else:
+                self.vscrollbar.pack(fill=tkinter.Y, side=tkinter.RIGHT, expand=tkinter.FALSE)
 
         def _on_mousewheel(event):
-            # Skip scroll if cvans is bigger then content.
+            # Skip scroll if canvas is bigger then content.
             if canvas.yview() == (0.0, 1.0):
                 return
             # Pick scroll directio dependinds of event <Button-?> or delta value <MouseWheel>
@@ -540,17 +546,18 @@ class ScrolledFrame(ttk.Frame):
             canvas.unbind_all("<MouseWheel>")  # On Windows
 
         def _update_bg(event):
-            bg = ttk.Style(master=master).lookup("TFrame", "background")
+            style_name = self.cget('style') or 'TFrame'
+            bg = ttk.Style(master=master).lookup(style_name, "background")
             canvas.configure(bg=bg)
+            self.interior.configure(style=style_name)
 
         ttk.Frame.__init__(self, master, *args, **kw)
 
         # create a canvas object and a vertical scrollbar for scrolling it
-        vscrollbar = ttk.Scrollbar(self, orient=tkinter.VERTICAL)
-        vscrollbar.pack(fill=tkinter.Y, side=tkinter.RIGHT, expand=tkinter.FALSE)
-        canvas = tkinter.Canvas(self, bd=0, highlightthickness=0, yscrollcommand=vscrollbar.set)
+        self.vscrollbar = ttk.Scrollbar(self, orient=tkinter.VERTICAL)
+        canvas = tkinter.Canvas(self, bd=0, highlightthickness=0, yscrollcommand=self.vscrollbar.set)
         canvas.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.TRUE)
-        vscrollbar.config(command=canvas.yview)
+        self.vscrollbar.config(command=canvas.yview)
 
         # reset the view
         canvas.xview_moveto(0)
@@ -657,6 +664,43 @@ class TkVue:
         # Generate the widget from template.
         self.component.root = self._walk(master=master, tree=parser.tree, context=self.component.data)
 
+    def _bind_attr(self, widget, value, func, context):
+        if value.startswith("{{") and value.endswith("}}"):
+            expr = value[2:-2]
+            # Register observer
+            expr_value = context.watch(expr, func)
+            # Assign the value
+            func(expr_value)
+            # Handle disposal
+            widget.bind(
+                "<Destroy>",
+                lambda event, expr=expr, func=func: context.unwatch(expr, func),
+                add="+",
+            )
+        else:
+            # Plain value with evaluation.
+            func(value)
+
+    def _dual_bind_attr(self, widget, value, attr, context):
+        assert value.startswith("{{") and value.endswith("}}")
+        expr = value[2:-2]
+        # Get current variable type.
+        # And create appropriate variable type.
+        var_type = type(context.eval(expr))
+        if var_type == int:
+            var = tkinter.IntVar(master=widget)
+        elif var_type == float:
+            var = tkinter.DoubleVar(master=widget)
+        elif var_type == bool:
+            var = tkinter.BooleanVar(master=widget)
+        else:
+            var = tkinter.StringVar(master=widget)
+        # Support dual-databinding
+        self._bind_attr(widget, value, lambda new_value, var=var: var.set(new_value), context)
+        var.trace_add("write", lambda *args, var=var: context.set(expr, var.get()))
+        # TODO trace_remove
+        widget.configure({attr: var})
+
     def _bind_attrs(self, master, tag, attrs, context):
         """
         Resolve attributes values for the given widget.
@@ -684,72 +728,42 @@ class TkVue:
         if "id" in attrs:
             setattr(self.component, attrs["id"], widget)
 
-        def bind_attr(value, func):
-            if value.startswith("{{") and value.endswith("}}"):
-                expr = value[2:-2]
-                # Register observer
-                expr_value = context.watch(expr, func)
-                # Assign the value
-                func(expr_value)
-                # Handle disposal
-                widget.bind(
-                    "<Destroy>",
-                    lambda event, expr=expr, func=func: context.unwatch(expr, func),
-                    add="+",
-                )
-            else:
-                # Plain value with evaluation.
-                func(value)
-
-        def dual_bind_attr(value, attr):
-            assert value.startswith("{{") and value.endswith("}}")
-            expr = value[2:-2]
-            # Get current variable type.
-            # And create appropriate variable type.
-            var_type = type(context.eval(expr))
-            if var_type == int:
-                var = tkinter.IntVar(master=widget)
-            elif var_type == float:
-                var = tkinter.DoubleVar(master=widget)
-            elif var_type == bool:
-                var = tkinter.BooleanVar(master=widget)
-            else:
-                var = tkinter.StringVar(master=widget)
-            # Support dual-databinding
-            bind_attr(v, lambda new_value, var=var: var.set(new_value))
-            var.trace_add("write", lambda *args, var=var: context.set(expr, var.get()))
-            # TODO trace_remove
-            widget.configure({attr: var})
-
         # Check if args contains pack or :pack
         # If the widget doesn't need to be pack. We don't need to compute changes.
-        if hasattr(widget, "pack"):
-            pack_attrs = {k[5:]: v for k, v in attrs.items() if k.startswith("pack-")}
+        if hasattr(widget, 'pack'):
+            geo = list(set([k.split('-')[0] for k in attrs.keys() if k.startswith("pack-") or k.startswith("place-")]))
+            if len(geo) > 1:
+                raise ValueError('widget can only use a single geometry manager: %s' % geo)
+            geo = geo[0] if geo else 'pack'
+            geo_attrs = {k.split('-')[1]: v for k, v in attrs.items() if k.startswith(geo + "-")}
             if "visible" in attrs:
-                bind_attr(
+                self._bind_attr(
+                    widget,
                     attrs["visible"],
-                    lambda value: widget.pack(pack_attrs) if value else widget.forget(),
+                    lambda value, geo_attrs=geo_attrs, geo=geo: getattr(widget, geo)(geo_attrs)
+                    if value
+                    else widget.forget(),
+                    context,
                 )
             else:
-                widget.pack(pack_attrs)
+                getattr(widget, geo)(geo_attrs)
         for k, v in attrs.items():
-            if k in ["id", "command", "visible"] or k.startswith("pack-"):
+            if k in ["id", "command", "visible"] or k.startswith("pack-") or k.startswith("place-"):
                 # ignore pack attribute
                 continue
             elif k in ["textvariable", "variable"]:
-                dual_bind_attr(v, k)
+                self._dual_bind_attr(widget, v, k, context)
             elif k == "selected":
                 # Special attribute for Button, Checkbutton
-                bind_attr(
-                    v,
-                    lambda value: widget.state(["selected" if value else "!selected", "!alternate"]),
+                self._bind_attr(
+                    widget, v, lambda value: widget.state(["selected" if value else "!selected", "!alternate"]), context
                 )
             elif k in ["text"]:
-                bind_attr(v, lambda value, k=k: widget.configure(**{k: gettext(value)}))
+                self._bind_attr(widget, v, lambda value, k=k: widget.configure(**{k: gettext(value)}), context)
             elif k == "wrap":
-                bind_attr(v, lambda value: _configure_wrap(widget, value))
+                self._bind_attr(widget, v, lambda value: _configure_wrap(widget, value), context)
             elif k == "image":
-                bind_attr(v, lambda value: _configure_image(widget, value))
+                self._bind_attr(widget, v, lambda value: _configure_image(widget, value), context)
             elif k == "geometry":
                 # Defined on TopLevel
                 func = getattr(widget, k, None)
@@ -761,7 +775,7 @@ class TkVue:
                 assert func, f"{k} is not a function of widget"
                 func(gettext(v))
             else:
-                bind_attr(v, lambda value, k=k: widget.configure(**{k: value}))
+                self._bind_attr(widget, v, lambda value, k=k: widget.configure(**{k: value}), context)
 
         return widget
 
@@ -837,6 +851,27 @@ class Component:
     def __init__(self, master=None):
         self.root = None
         self.vue = TkVue(self, master=master)
+        # Replace mainloop implementation for TopLevel
+        if hasattr(self.root, 'mainloop'):
+            self.mainloop = self._mainloop
 
     def __getattr__(self, name):
         return getattr(self.root, name)
+
+    def get_event_loop(self):
+        return asyncio.get_event_loop()
+
+    def _mainloop(self):
+        asyncio.run(self._async_mainloop())
+
+    async def _async_mainloop(self):
+        '''
+        An asynchronous implementation of tkinter mainloop
+        '''
+        while True:
+            try:
+                self.root.winfo_exists()  # Throw TclError if the main Windows is destroyed
+                self.root.update()
+            except tkinter.TclError:
+                break
+            await asyncio.sleep(0.01)
