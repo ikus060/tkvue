@@ -13,24 +13,36 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
-import pkg_resources
+
+import asyncio
 
 import tkvue
 
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel geometry="970x970" title="TKVue Test">
+<TopLevel geometry="250x250" title="TKVue Test">
     <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Checkbutton text="Show animation" variable="{{show}}" />
-        <Label image="{{icon_path}}" visible="{{show}}" background="#ffffff" />
-    </Frame>
-    <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Label text="This is some text" compound="right" image="{{icon_path if show else None}}" background="#ffffff" />
+        <Progressbar orient="horizontal" mode="indeterminate" value="{{progress}}" pack-fill="x"/>
+        <Progressbar orient="horizontal" mode="determinate"  value="{{progress}}" pack-fill="x"/>
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"show": True, "icon_path": pkg_resources.resource_filename(__name__, "dots.gif")})
+    data = tkvue.Context(
+        {
+            "progress": 20,
+        }
+    )
+
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.root.after(1, lambda: asyncio.get_running_loop().create_task(self._update()))
+
+    async def _update(self):
+        while self.root.winfo_exists():
+            self.data['progress'] = (self.data['progress'] + 1) % 100
+            # Sleep 500ms
+            await asyncio.sleep(0.05)
 
 
 if __name__ == "__main__":

@@ -43,7 +43,7 @@ linux:
 
 win32:
   before_script:
-  - choco install python3 --version=3.7.9 -y -f --forcex86 --source "'https://nexus.ikus-soft.com/repository/choco/'"
+  - choco install python3 --no-progress --version=3.7.9 -y -f --forcex86 --source "'https://nexus.ikus-soft.com/repository/choco/'"
   - $Env:path += ";C:\Python37\Scripts\;C:\Python37\;"
   - $Env:path
   - python.exe -VV

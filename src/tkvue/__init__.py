@@ -297,11 +297,11 @@ def _configure_image(widget, image_path):
         if not getattr(widget, "_func_id", None):
             widget._func_id = widget.bind("<Destroy>", _stop_animation)
 
-    # Check if image_path is the same.
-    if getattr(widget, "image_path", None) == image_path:
-        return
     # Create a new image
-    if image_path.endswith(".gif"):
+    if not image_path:
+        # Remove image
+        widget.frames = []
+    elif image_path.endswith(".gif"):
         widget.frames = []
         while True:
             try:
@@ -320,9 +320,10 @@ def _configure_image(widget, image_path):
         widget.frames = sorted([name for name in widget.image_names() if name.startswith(f"{image_path}_")])
     else:
         widget.frames = [tkinter.PhotoImage(master=widget, file=image_path)]
+
     # Update widget image with first frame.
     widget.frame = 0
-    widget.configure(image=widget.frames[0])
+    widget.configure(image=widget.frames[0] if widget.frames else '')
 
     if len(widget.frames) > 1:
         _start_animation()

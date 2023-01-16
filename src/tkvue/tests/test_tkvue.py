@@ -478,6 +478,8 @@ class ComponentTest(unittest.TestCase):
             # Then Button and Label get update with an image
             self.assertTrue(dlg.button.cget("image")[0].startswith("pyimage"))
             self.assertTrue(dlg.label.cget("image")[0].startswith("pyimage"))
+            # Then set image to None
+            dlg.data["image_path"] = ''
 
     @unittest.skipIf(IS_WINDOWS, "Not working on Windows CICD")
     def test_text_wrap(self):
