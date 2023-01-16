@@ -25,9 +25,12 @@ class RootDialog(tkvue.Component):
         <Checkbutton text="Show animation" variable="{{show}}" />
         <Label image="{{icon_path}}" visible="{{show}}" background="#ffffff" />
     </Frame>
+    <Frame pack-fill="both" pack-expand="true" padding="10">
+        <Label text="This is some text" compound="right" image="{{icon_path if show else None}}" background="#ffffff" />
+    </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"show": True, "icon_path": pkg_resources.resource_filename(__name__, "preloader.gif")})
+    data = tkvue.Context({"show": True, "icon_path": pkg_resources.resource_filename(__name__, "dots.gif")})
 
 
 if __name__ == "__main__":
