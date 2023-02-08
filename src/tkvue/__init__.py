@@ -684,7 +684,7 @@ class TkVue:
 
     def _dual_bind_attr(self, widget, value, attr, context):
         assert value.startswith("{{") and value.endswith("}}")
-        expr = value[2:-2]
+        expr = value[2:-2].strip()
         # Get current variable type.
         # And create appropriate variable type.
         var_type = type(context.eval(expr))
