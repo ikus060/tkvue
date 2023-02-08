@@ -5,20 +5,109 @@
 <a href="https://sonar.ikus-soft.com/dashboard?id=tkvue"><img alt="Coverage" src="https://sonar.ikus-soft.com/api/project_badges/measure?project=tkvue&metric=coverage"></a>
 </p>
 
-# TKvue
+# TKVue
 
-Declarative Tkinter UI using makup language with reactive data binding
+Declarative Tkinter UI using makup language with reactive data binding.
 
-# Translation
+## Description
 
-Tkvue provide a babael extention to extract static text from xml template.
+TKVue bring familiar advantages in web development to traditional development. This project allow you to create modern graphical user interface written in Python using Tkinter library.
+
+TKVue provide a declarative language to build user interface with Markup language.
+
+```xml
+<Label text="Hello world!" />
+```
+
+TKVue provide databinding to quickly make your graphical user interface dynamic.
+
+```xml
+<ComboBox pack-side="left" pack-expand="1" values="['zero', 'one', 'two', 'three']" textvariable="{{ myvariable }}" />
+<Label text="{{ myvariable }}" />
+```
+
+TKVue provide a babel entry point to support internationalization.
+
+`babel.cfg`:
+
+```xml
+[tkvue: **/templates/**.tkml]
+```
+
+## Installation
+
+TKVue is available on pypi and can be installed using `pip`.
+
+```sh
+pip install debbuild
+```
+
+## Usage
+
+Once installed you may take a look at various examples available:
+
+<https://gitlab.com/ikus-soft/tkvue/-/tree/master/src/tkvue/examples>
+
+Help is welcome to write proper documentation about how to use TKVue.
+
+## Support
+
+If you need help or experience problem while using TKvue, open a ticket in [Gitlab](https://gitlab.com/ikus-soft/tkvue/-/issues/new).
+
+## Result
+
+Once you have customize the Tkinter themes, the result could be astonishing. Here the result of [Minarca](https://minarca.org) interface build using TKVue.
+
+![Minarca Agent graphical user interface build with TKVue](https://gitlab.com/ikus-soft/tkvue/-/raw/master/doc/8result-welcome.png)
+
+## Translation
+
+Tkvue provide a babel extention to extract static text from xml template.
 
 You must configure babel to use the right plugin to extract the values from the templates.
 
-    babel.cfg:
+babel.cfg:
 
-    [tkvue: **/templates/**.html]
+```ini
+[tkvue: **/templates/**.tkml]
+```
 
 Then You may use babel and other gettext tools to complete the translation using the `.po` file.
 
-    python setup.py extract_messages
+```sh
+python setup.py extract_messages
+```
+
+## Changelog
+
+## 2.0.2 (2023-02-08)
+
+* Add example to demonstrate usage of variables  [dynamic.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/dynamic.py)
+* Add example to demonstrate usage of `visible=` attribute to show or hide widget [dynamic_visible.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/dynamic_visible.py)
+* Add example to demonstrate usage of `for=` attribute to create list of widget [dynamic_loop.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/dynamic_loop.py)
+* Add example to demonstrate style customization [color.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/color.py)
+
+### 2.0.1 (2023-01-16)
+
+* Support assignment of `None` to `<Label image="..." >` to hide image [animated_gif.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/animated_gif.py)
+* Add example to demonstrate usage of `<Progressbar>` [progressbar.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/progressbar.py)
+
+### 2.0.0 (2022-12-13)
+
+* Implement mainloop using asyncio to avoid multi-threading #1
+* Increase default offset when displaying `<Tooltip>` to avoid flikering when user hover a widget
+* `<ScrolledFrame>` inherit the background color from the style
+* Show or hide scroll bar of `<ScrolledFrame>` when needed
+* Pin version of black, isort and flake8
+* Add support for `place` geometry manager
+
+### 1.0.1 (2022-11-09)
+
+* Fix license badge
+* Declare babel entry point for translation
+* Add combobox example
+* Use private gitlab runner for running test
+
+### 1.0.0 (2022-04-06)
+
+* Initial version of TKVue writting for Minarca project
