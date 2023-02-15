@@ -39,7 +39,7 @@ TKVue provide a babel entry point to support internationalization.
 TKVue is available on pypi and can be installed using `pip`.
 
 ```sh
-pip install debbuild
+pip install tkvue
 ```
 
 ## Usage
