@@ -78,6 +78,13 @@ Then You may use babel and other gettext tools to complete the translation using
 python setup.py extract_messages
 ```
 
+## See Also
+
+Other Tkinter-related projects worth mentioning:
+
+* [witkets](https://www.leandromattioli.com.br/witkets): Create Tkinter interface using XML similar to TKVue
+* [ttkbootstrap](https://ttkbootstrap.readthedocs.io/): Theme extension for tkinter inspire by Bootstrap
+
 ## Changelog
 
 ## 2.0.2 (2023-02-08)
