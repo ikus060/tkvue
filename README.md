@@ -87,9 +87,13 @@ Other Tkinter-related projects worth mentioning:
 
 ## Changelog
 
+## 2.0.3 (2023-02-23)
+
+* Support `resizable` attribute on TopLevel [not_resizable.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/not_resizable.py)
+
 ## 2.0.2 (2023-02-08)
 
-* Add example to demonstrate usage of variables  [dynamic.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/dynamic.py)
+* Add example to demonstrate usage of variables [dynamic.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/dynamic.py)
 * Add example to demonstrate usage of `visible=` attribute to show or hide widget [dynamic_visible.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/dynamic_visible.py)
 * Add example to demonstrate usage of `for=` attribute to create list of widget [dynamic_loop.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/dynamic_loop.py)
 * Add example to demonstrate style customization [color.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/color.py)

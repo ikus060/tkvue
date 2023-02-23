@@ -329,6 +329,16 @@ class DialogWithBindingCommand(tkvue.Component):
         pass
 
 
+class DialogNotResizable(tkvue.Component):
+    template = """
+    <TopLevel geometry="322x261" resizable="False False">
+        <ScrolledFrame id="scrolled_frame">
+            <Label id="label1" text="{{item}}" for="item in range(1,25)"/>
+        </ScrolledFrame>
+    </TopLevel>
+    """
+
+
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
 class ComponentTest(unittest.TestCase):
     def test_open_close(self):
@@ -566,3 +576,9 @@ class ComponentTest(unittest.TestCase):
         # Closing windows after .5 seconds
         dlg.root.after(500, dlg.root.destroy)
         dlg.mainloop()
+
+    def test_resizable(self):
+        # Given a dialog with resizable="False False"
+        with new_dialog(DialogNotResizable) as dlg:
+            dlg.pump_events()
+        # Then the dialog cannot be resize

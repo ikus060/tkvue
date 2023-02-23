@@ -770,6 +770,11 @@ class TkVue:
                 func = getattr(widget, k, None)
                 assert func, f"{k} is not a function of widget"
                 func(v)
+            elif k == "resizable":
+                func = getattr(widget, k, None)
+                assert func, f"{k} is not a function of widget"
+                assert isinstance(v, str), f"{v} should be a string value: <width> <height>"
+                func(*v.partition(' ')[0::2])
             elif k == "title":
                 # Defined on TopLevel
                 func = getattr(widget, k, None)
