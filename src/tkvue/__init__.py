@@ -3,6 +3,7 @@
 # Use is subject to license terms.
 import asyncio
 import collections
+import functools
 import logging
 import os
 import tkinter
@@ -23,12 +24,26 @@ logger = logging.getLogger(__name__)
 
 _components = {}  # component registry.
 
+_attrs = {}  # Attribute registry
+
 _default_basename = None
 _default_classname = "Tkvue"
 _default_screenname = None
 _default_icons = None
 _default_theme = None
 _default_theme_source = None
+
+
+def attr(widget_cls, attr_name):
+    """
+    Function decorator to register an special attribute definition for a Widget.
+    """
+
+    def decorate(f):
+        _attrs[(widget_cls, attr_name)] = f
+        return f
+
+    return decorate
 
 
 def configure_tk(
@@ -268,6 +283,11 @@ class Context(collections.abc.MutableMapping):
         return True
 
 
+def _configure(widget, key, value):
+    widget.configure(**{key: value})
+
+
+@attr(ttk.Widget, "image")
 def _configure_image(widget, image_path):
     """
     Configure the image attribute of a Label or a Button.
@@ -331,6 +351,7 @@ def _configure_image(widget, image_path):
         _stop_animation()
 
 
+@attr(ttk.Widget, "wrap")
 def _configure_wrap(widget, wrap):
     # Support Text wrapping
     if wrap.lower() in ["true", "1"]:
@@ -339,6 +360,12 @@ def _configure_wrap(widget, wrap):
             lambda e: widget.configure(wraplen=widget.winfo_width()),
             add="+",
         )
+
+
+@attr(tkinter.Tk, "theme")
+def _configure_theme(widget, value):
+    # Defined on TopLevel
+    ttk.Style(master=widget).theme_use(value)
 
 
 class ToolTip(ttk.Frame):
@@ -761,22 +788,30 @@ class TkVue:
                 )
             elif k in ["text"]:
                 self._bind_attr(widget, v, lambda value, k=k: widget.configure(**{k: gettext(value)}), context)
-            elif k == "wrap":
-                self._bind_attr(widget, v, lambda value: _configure_wrap(widget, value), context)
-            elif k == "image":
-                self._bind_attr(widget, v, lambda value: _configure_image(widget, value), context)
             elif k == "geometry":
                 # Defined on TopLevel
                 func = getattr(widget, k, None)
                 assert func, f"{k} is not a function of widget"
                 func(v)
+            elif k == "resizable":
+                func = getattr(widget, k, None)
+                assert func, f"{k} is not a function of widget"
+                assert isinstance(v, str), f"{v} should be a string value: <width> <height>"
+                func(*v.partition(' ')[0::2])
             elif k == "title":
                 # Defined on TopLevel
                 func = getattr(widget, k, None)
                 assert func, f"{k} is not a function of widget"
                 func(gettext(v))
             else:
-                self._bind_attr(widget, v, lambda value, k=k: widget.configure(**{k: value}), context)
+                # Lookup attribute registry
+                func = [func for a, func in _attrs.items() if a[1] == k if isinstance(widget, a[0])]
+                if func:
+                    func = functools.partial(func[0], widget)
+                else:
+                    # Otherwise default to widget configure
+                    func = functools.partial(_configure, widget, k)
+                self._bind_attr(widget, v, func, context)
 
         return widget
 

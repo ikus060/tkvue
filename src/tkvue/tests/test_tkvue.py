@@ -16,6 +16,7 @@
 import os
 import sys
 import tkinter
+import tkinter.ttk as ttk
 import unittest
 from contextlib import contextmanager
 
@@ -329,6 +330,28 @@ class DialogWithBindingCommand(tkvue.Component):
         pass
 
 
+class DialogNotResizable(tkvue.Component):
+    template = """
+    <TopLevel geometry="322x261" resizable="False False">
+        <ScrolledFrame id="scrolled_frame">
+            <Label id="label1" text="{{item}}" for="item in range(1,25)"/>
+        </ScrolledFrame>
+    </TopLevel>
+    """
+
+
+class DialogWithTheme(tkvue.Component):
+    template = """
+    <TopLevel theme="{{ theme_value }}">
+        <Button text="Push button" />
+    </TopLevel>
+    """
+
+    def __init__(self, master=None):
+        self.data = tkvue.Context({"theme_value": 'alt'})
+        super().__init__(master=master)
+
+
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
 class ComponentTest(unittest.TestCase):
     def test_open_close(self):
@@ -337,7 +360,7 @@ class ComponentTest(unittest.TestCase):
             # When opening the dialog
             dlg.pump_events()
             # Then dialog has the right geometry
-            self.assertRegexpMatches(dlg.root.winfo_geometry(), '^500x500.*')
+            self.assertRegex(dlg.root.winfo_geometry(), '^500x500.*')
             # Then the dialog has a title
             self.assertEqual('My Dialog', dlg.root.title())
             # Then the dialog has the default class
@@ -566,3 +589,20 @@ class ComponentTest(unittest.TestCase):
         # Closing windows after .5 seconds
         dlg.root.after(500, dlg.root.destroy)
         dlg.mainloop()
+
+    def test_resizable(self):
+        # Given a dialog with resizable="False False"
+        with new_dialog(DialogNotResizable) as dlg:
+            dlg.pump_events()
+        # Then the dialog cannot be resize
+
+    def test_theme(self):
+        # Given a dialog with theme defined
+        with new_dialog(DialogWithTheme) as dlg:
+            dlg.pump_events()
+            # Then TopLevel get created with specific theme
+            self.assertEqual('alt', ttk.Style(dlg.root).theme_use())
+            # When updating the theme value
+            dlg.data['theme_value'] = 'clam'
+            # Then theme get updated
+            self.assertEqual('clam', ttk.Style(dlg.root).theme_use())
