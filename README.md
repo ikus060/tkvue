@@ -87,9 +87,10 @@ Other Tkinter-related projects worth mentioning:
 
 ## Changelog
 
-## 2.0.3 (2023-02-23)
+## 2.0.3 (2023-02-26)
 
 * Support `resizable` attribute on TopLevel [not_resizable.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/not_resizable.py)
+* Support `theme` attribute on TopLevel [theme.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/theme.py)
 
 ## 2.0.2 (2023-02-08)
 
