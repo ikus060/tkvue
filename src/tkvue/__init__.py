@@ -22,8 +22,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-_components = {}  # component registry.
-
+_components = {}  # Component registry.
+_widgets = {}  # Widget registry
 _attrs = {}  # Attribute registry
 
 _default_basename = None
@@ -44,6 +44,27 @@ def attr(widget_cls, attr_name):
         return f
 
     return decorate
+
+
+def widget(widget_name):
+    """
+    Function decorator to register a widget.
+    """
+
+    def decorate(f):
+        _widgets[widget_name] = f
+        return f
+
+    return decorate
+
+
+#
+# Register all ttk widget
+#
+for a in dir(ttk):
+    cls = getattr(ttk, a)
+    if type(cls) == type and issubclass(cls, ttk.Widget):
+        _widgets[a.lower()] = cls
 
 
 def configure_tk(
@@ -70,6 +91,7 @@ def configure_tk(
     _default_theme_source = theme_source
 
 
+@widget('toplevel')
 def create_toplevel(master=None):
     """
     Used to create a TopLevel window.
@@ -368,6 +390,7 @@ def _configure_theme(widget, value):
     ttk.Style(master=widget).theme_use(value)
 
 
+@widget("tooltip")
 class ToolTip(ttk.Frame):
     """
     Tooltip widget.
@@ -525,6 +548,7 @@ class Loop:
             self.idx -= 1
 
 
+@widget('scrolledframe')
 class ScrolledFrame(ttk.Frame):
     """
     Let provide our own Scrolled frame supporting styled background color.
@@ -600,23 +624,6 @@ class ScrolledFrame(ttk.Frame):
         canvas.bind("<Enter>", _bind_to_mousewheel)
         canvas.bind("<Leave>", _unbind_from_mousewheel)
         canvas.bind("<<ThemeChanged>>", _update_bg)
-
-
-def getwidget(name):
-    if name == "scrolledframe":
-        return ScrolledFrame
-    elif name == "tooltip":
-        return ToolTip
-    elif name == "toplevel":
-        return create_toplevel
-    # lookup widget by name
-    for a in dir(ttk):
-        if a.lower() == name.lower():
-            func = getattr(ttk, a)
-            if hasattr(func, "__call__"):
-                return func
-    # lookup in components. default to None
-    return _components.get(name, None)
 
 
 class TemplateError(Exception):
@@ -738,9 +745,12 @@ class TkVue:
         assert attrs is not None
 
         # Get widget class.
-        Widget = getwidget(tag)
-        assert Widget, "cannot find widget matching tag name: " + tag
+        widget_cls = _widgets.get(tag, None)
+        if widget_cls is None:
+            widget_cls = _components.get(tag, None)
+        assert widget_cls, "cannot find widget matching tag name: " + tag
 
+        # The "command" attribute must be pass during widget construction.
         kwargs = {}
         if "command" in attrs:
             kwargs["command"] = self._create_command(attrs["command"], context)
@@ -748,7 +758,7 @@ class TkVue:
         #
         # Create widget.
         #
-        widget = Widget(master=master, **kwargs)
+        widget = widget_cls(master=master, **kwargs)
 
         #
         # Assign widget to variables.
