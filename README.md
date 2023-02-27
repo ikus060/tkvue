@@ -87,6 +87,12 @@ Other Tkinter-related projects worth mentioning:
 
 ## Changelog
 
+## Next Release
+
+* Add example to create Modal Dialog [modal.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/modal.py)
+* Provide the `@tkvue.widget` annotation to register a new widget.
+* Provide the `@tkvue.attr` annotation to register the custom attributes of the widget.
+
 ## 2.0.3 (2023-02-26)
 
 * Support `resizable` attribute on TopLevel [not_resizable.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/not_resizable.py)
