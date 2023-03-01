@@ -917,7 +917,8 @@ class Component:
         while True:
             try:
                 self.root.winfo_exists()  # Throw TclError if the main Windows is destroyed
-                self.root.update()
+                # Make Tkinter responsive by executing events.
+                self.root.dooneevent(tkinter._tkinter.ALL_EVENTS | tkinter._tkinter.DONT_WAIT)
             except tkinter.TclError:
                 break
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.001)
