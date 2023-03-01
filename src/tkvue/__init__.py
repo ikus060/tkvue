@@ -917,7 +917,19 @@ class Component:
         while True:
             try:
                 self.root.winfo_exists()  # Throw TclError if the main Windows is destroyed
-                self.root.update()
+                await self._update_root()
             except tkinter.TclError:
                 break
             await asyncio.sleep(0.01)
+
+    async def _update_root(self):
+        """
+        This coroutine runs a complete iteration of the tkinter event loop for a
+        root. It yields in between each individual event, which prevents it from
+        blocking the asyncio event loop. It runs until there are no more events in
+        the queue, then returns, allowing the caller to do other tasks or sleep
+        afterwards. This keeps CPU load low. Generally clients will never need to
+        call this function; it should only be used internally by async_mainloop.
+        """
+        while self.root.dooneevent(tkinter._tkinter.DONT_WAIT):
+            await asyncio.sleep(0)
