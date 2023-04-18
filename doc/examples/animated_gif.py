@@ -13,28 +13,24 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
+import pkg_resources
+
 import tkvue
 
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel geometry="970x500" title="TKVue Test">
+<TopLevel geometry="450x450" title="TKVue Test">
     <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Label text="Label with tooltip">
-            <Tooltip text="Tooltip text for label" />
-        </Label>
-
-        <Button text="Button with tooltip">
-            <Tooltip text="{{tooltip_value}}" />
-        </Button>
-
-        <Label text="Tooltip with width">
-            <Tooltip width="50" text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum" />
-        </Label>
+        <Checkbutton text="Show animation" variable="{{show}}" />
+        <Label image="{{icon_path}}" visible="{{show}}" background="#ffffff" />
+    </Frame>
+    <Frame pack-fill="both" pack-expand="true" padding="10">
+        <Label text="This is some text" compound="right" image="{{icon_path if show else None}}" background="#ffffff" />
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"tooltip_value": "Tooltip value to be displayed"})
+    data = tkvue.Context({"show": True, "icon_path": pkg_resources.resource_filename(__name__, "dots.gif")})
 
 
 if __name__ == "__main__":

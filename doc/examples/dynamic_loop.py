@@ -1,4 +1,4 @@
-# Copyright (C) 2023 IKUS Software inc. All rights reserved.
+# Copyright (C) 2021 IKUS Software inc. All rights reserved.
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -18,12 +18,17 @@ import tkvue
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel geometry="322x261" title="TKVue Test" resizable="False False">
+<TopLevel geometry="500x500" title="TKVue Test">
     <Frame pack-fill="both" pack-expand="true" padding="10">
+        <Label text="Selection number of row to display:" />
+        <Combobox values="{{ list(range(1, 100)) }}" textvariable="{{ count }}"/>
+        <Frame pack-fill="both" pack-expand="1" pack-side="left">
+            <Label pack-fill="x" pack-expand="1" for="i in range(1, count)" text="{{ 'row %s' % i }}" />
+        </Frame>
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({'show': True})
+    data = tkvue.Context({'count': 5})
 
 
 if __name__ == "__main__":

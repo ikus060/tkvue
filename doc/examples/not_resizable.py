@@ -1,4 +1,4 @@
-# Copyright (C) 2021 IKUS Software inc. All rights reserved.
+# Copyright (C) 2023 IKUS Software inc. All rights reserved.
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -13,24 +13,20 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
-
 import tkvue
 
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel title="TKVue Test" >
-    <Frame pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
-        <Label text="Available values: " width="20" pack-side="left"/>
-        <ComboBox pack-side="left" pack-expand="1" values="{{myvalues}}" textvariable="{{var1}}" />
-    </Frame>
-    <Frame pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
-        <Label text="{{'Available values:' + var1 }}" />
+<TopLevel geometry="322x261" title="TKVue Test" resizable="False False">
+    <Frame pack-fill="both" pack-expand="true" padding="10">
+        <Label text="Window should not be resizable" />
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"myvalues": ["zero", "one", "two", "three"], "var1": ""})
+    data = tkvue.Context({'show': True})
 
 
-dlg = RootDialog()
-dlg.mainloop()
+if __name__ == "__main__":
+    dlg = RootDialog()
+    dlg.mainloop()

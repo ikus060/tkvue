@@ -13,24 +13,29 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
-import pkg_resources
-
 import tkvue
 
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel geometry="970x970" title="TKVue Test">
+<TopLevel geometry="450x450" title="TKVue Test">
     <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Checkbutton text="Show animation" variable="{{show}}" />
-        <Label image="{{icon_path}}" visible="{{show}}" background="#ffffff" />
-    </Frame>
-    <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Label text="This is some text" compound="right" image="{{icon_path if show else None}}" background="#ffffff" />
+        <Label text="Static text on top of scrollable" />
+        <ScrolledFrame pack-fill="both" pack-expand="1" pack-side="left">
+            <Label pack-fill="x" pack-expand="1" for="i in range(1,100)" text="{{ 'left %s' % i }}" />
+        </ScrolledFrame>
+        <ScrolledFrame pack-fill="both" pack-expand="1" pack-side="right">
+            <Label pack-fill="x" pack-expand="1" for="i in range(1,5)" text="{{ 'right %s' % i }}" />
+        </ScrolledFrame>
     </Frame>
 </TopLevel>
+
+
     """
-    data = tkvue.Context({"show": True, "icon_path": pkg_resources.resource_filename(__name__, "dots.gif")})
+    data = tkvue.Context({})
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 if __name__ == "__main__":

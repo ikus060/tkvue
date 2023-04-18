@@ -20,10 +20,26 @@ import tkvue
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel geometry="250x250" title="TKVue Test">
+<TopLevel title="TKVue Test">
     <Frame pack-fill="both" pack-expand="1">
-        <!-- Load image from variable -->
-        <Label id="label" pack-fill="both" pack-expand="1" text="gastonf" image="{{icon_path}}" compound="left"/>
+        <label text="compound none" />
+        <Label id="label" text="gastonf" image="{{icon_path}}" compound="none"/>
+        <label text="" />
+        <label text="compound bottom" />
+        <Label id="label" text="gastonf" image="{{icon_path}}" compound="bottom"/>
+        <label text="" />
+        <label text="compound top" />
+        <Label id="label" text="gastonf" image="{{icon_path}}" compound="top"/>
+        <label text="" />
+        <label text="compound left" />
+        <Label id="label" text="gastonf" image="{{icon_path}}" compound="left"/>
+        <label text="" />
+        <label text="compound right" />
+        <Label id="label" text="gastonf" image="{{icon_path}}" compound="right"/>
+        <label text="" />
+        <label text="compound center" />
+        <Label id="label" text="gastonf" image="{{icon_path}}" compound="center"/>
+        <label text="" />
     </Frame>
 </TopLevel>
     """

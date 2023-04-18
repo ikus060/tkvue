@@ -13,19 +13,23 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
+import pkg_resources
+
 import tkvue
 
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel geometry="970x500" title="TKVue Test">
-    <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Checkbutton text="Show Text" variable="{{show}}" />
-        <Label text="Text is Visible" visible="{{show}}" />
-    </Frame>
+<TopLevel geometry="450x450" title="TKVue Test">
+    <Label image="{{ bg }}" place-x="0" place-y="0" place-relwidth="1" place-relheight="1" compound="top"/>
+    <Button text="Click Me" pack-expand="1" />
 </TopLevel>
     """
-    data = tkvue.Context({'show': True})
+    data = tkvue.Context(
+        {
+            "bg": pkg_resources.resource_filename(__name__, "bg.png"),
+        }
+    )
 
 
 if __name__ == "__main__":
