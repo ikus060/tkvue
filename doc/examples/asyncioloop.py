@@ -24,7 +24,7 @@ import tkvue
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel geometry="970x970" title="TKVue Test">
+<TopLevel geometry="450x450" title="TKVue Test">
     <Frame pack-fill="both" pack-expand="true" padding="10">
         <Checkbutton text="Show animation" variable="{{show}}" />
         <Label image="{{icon_path}}" visible="{{show}}" background="#ffffff" />
@@ -50,7 +50,7 @@ class RootDialog(tkvue.Component):
         self.data = tkvue.Context(
             {
                 "show": True,
-                "icon_path": pkg_resources.resource_filename(__name__, "preloader.gif"),
+                "icon_path": pkg_resources.resource_filename(__name__, "dots.gif"),
                 'checking_for_update': False,  # True when background thread is running.
                 'is_latest': None,
                 'check_latest_version_error': None,
@@ -69,10 +69,12 @@ class RootDialog(tkvue.Component):
 
         # Query latest version.
         try:
+            tkvue_cur_version = pkg_resources.get_distribution("tkvue").version
             async with aiohttp.ClientSession() as session:
-                async with session.get('https://www.ikus-soft.com/archive/minarca/latest_version') as response:
-                    value = await response.text()
-            self.data['is_latest'] = is_latest = bool(value)
+                async with session.get('https://pypi.org/pypi/tkvue/json') as response:
+                    data = await response.json()
+            latest_version = data.get('info', {}).get('version', None)
+            self.data['is_latest'] = is_latest = latest_version == tkvue_cur_version
             if not is_latest:
                 # Show dialog
                 pass

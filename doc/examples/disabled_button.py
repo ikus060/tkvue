@@ -1,4 +1,4 @@
-# Copyright (C) 2021 IKUS Software inc. All rights reserved.
+# Copyright (C) 2023 IKUS Software inc. All rights reserved.
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -13,24 +13,23 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
-import pkg_resources
 
 import tkvue
 
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel geometry="970x970" title="TKVue Test">
-    <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Checkbutton text="Show animation" variable="{{show}}" />
-        <Label image="{{icon_path}}" visible="{{show}}" background="#ffffff" />
-    </Frame>
-    <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Label text="This is some text" compound="right" image="{{icon_path if show else None}}" background="#ffffff" />
+<TopLevel title="TKVue Test">
+    <Frame pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
+        <Checkbutton variable="{{btn_disabled}}" text="Disable button" />
+        <Button text="Click Me" command="btn_clicked" state="{{'disabled' if btn_disabled else '!disabled'}}"/>
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"show": True, "icon_path": pkg_resources.resource_filename(__name__, "dots.gif")})
+    data = tkvue.Context({"btn_disabled": False})
+
+    def btn_clicked(self):
+        print('Button clicked')
 
 
 if __name__ == "__main__":

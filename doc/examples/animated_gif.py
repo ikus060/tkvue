@@ -20,16 +20,17 @@ import tkvue
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel geometry="970x970" title="TKVue Test">
-    <Label image="{{ bg }}" place-x="0" place-y="0" place-relwidth="1" place-relheight="1" compound="top"/>
-    <Checkbutton text="Show animation" />
+<TopLevel geometry="450x450" title="TKVue Test">
+    <Frame pack-fill="both" pack-expand="true" padding="10">
+        <Checkbutton text="Show animation" variable="{{show}}" />
+        <Label image="{{icon_path}}" visible="{{show}}" background="#ffffff" />
+    </Frame>
+    <Frame pack-fill="both" pack-expand="true" padding="10">
+        <Label text="This is some text" compound="right" image="{{icon_path if show else None}}" background="#ffffff" />
+    </Frame>
 </TopLevel>
     """
-    data = tkvue.Context(
-        {
-            "bg": pkg_resources.resource_filename(__name__, "bg.png"),
-        }
-    )
+    data = tkvue.Context({"show": True, "icon_path": pkg_resources.resource_filename(__name__, "dots.gif")})
 
 
 if __name__ == "__main__":

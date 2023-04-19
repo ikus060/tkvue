@@ -24,11 +24,15 @@ class RootDialog(tkvue.Component):
         <Label text="Available values: " width="20" pack-side="left"/>
         <ComboBox id="label" pack-side="left" pack-expand="1" values="{{myvalues}}" textvariable="{{selected_value}}" />
     </Frame>
+    <Frame pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
+        <Label text="Value selected: " width="20" pack-side="left"/>
+        <Label pack-side="left" pack-expand="1" text="{{selected_value}}" />
+    </Frame>
 </TopLevel>
     """
+    data = tkvue.Context({"myvalues": ["zero", "one", "two", "three"], "selected_value": "one"})
 
     def __init__(self, master=None):
-        self.data = tkvue.Context({"myvalues": ["zero", "one", "two", "three"], "selected_value": "one"})
         super().__init__(master)
         # We could register an observer to get notify when the value is updated
         self.data.watch('selected_value', self.on_value_changed)

@@ -40,7 +40,11 @@ def attr(widget_cls, attr_name):
     """
 
     def decorate(f):
-        _attrs[(widget_cls, attr_name)] = f
+        if isinstance(widget_cls, (list, tuple)):
+            for c in widget_cls:
+                _attrs[(c, attr_name)] = f
+        else:
+            _attrs[(widget_cls, attr_name)] = f
         return f
 
     return decorate
@@ -307,6 +311,36 @@ class Context(collections.abc.MutableMapping):
 
 def _configure(widget, key, value):
     widget.configure(**{key: value})
+
+
+@attr((tkinter.Tk, tkinter.Toplevel), "geometry")
+def _configure_geometry(widget, value):
+    """
+    Configure geometry on TopLevel
+    """
+    widget.geometry(value)
+
+
+@attr((tkinter.Tk, tkinter.Toplevel), "resizable")
+def _configure_resizable(widget, value):
+    assert isinstance(value, str), f"{value} should be a string value: <width> <height>"
+    widget.resizable(*value.partition(' ')[0::2])
+
+
+@attr((tkinter.Tk, tkinter.Toplevel), "title")
+def _configure_title(widget, value):
+    assert isinstance(value, str), f"{value} should be a string"
+    widget.title(gettext(value))
+
+
+@attr(ttk.Widget, "text")
+def _configure_text(widget, value):
+    widget.configure(text=gettext(value))
+
+
+@attr((ttk.Button, ttk.Checkbutton), "selected")
+def _configure_selected(widget, value):
+    widget.state(["selected" if value else "!selected", "!alternate"])
 
 
 @attr(ttk.Widget, "image")
@@ -796,23 +830,6 @@ class TkVue:
                 self._bind_attr(
                     widget, v, lambda value: widget.state(["selected" if value else "!selected", "!alternate"]), context
                 )
-            elif k in ["text"]:
-                self._bind_attr(widget, v, lambda value, k=k: widget.configure(**{k: gettext(value)}), context)
-            elif k == "geometry":
-                # Defined on TopLevel
-                func = getattr(widget, k, None)
-                assert func, f"{k} is not a function of widget"
-                func(v)
-            elif k == "resizable":
-                func = getattr(widget, k, None)
-                assert func, f"{k} is not a function of widget"
-                assert isinstance(v, str), f"{v} should be a string value: <width> <height>"
-                func(*v.partition(' ')[0::2])
-            elif k == "title":
-                # Defined on TopLevel
-                func = getattr(widget, k, None)
-                assert func, f"{k} is not a function of widget"
-                func(gettext(v))
             else:
                 # Lookup attribute registry
                 func = [func for a, func in _attrs.items() if a[1] == k if isinstance(widget, a[0])]
@@ -917,7 +934,19 @@ class Component:
         while True:
             try:
                 self.root.winfo_exists()  # Throw TclError if the main Windows is destroyed
-                self.root.update()
+                await self._update_root()
             except tkinter.TclError:
                 break
             await asyncio.sleep(0.01)
+
+    async def _update_root(self):
+        """
+        This coroutine runs a complete iteration of the tkinter event loop for a
+        root. It yields in between each individual event, which prevents it from
+        blocking the asyncio event loop. It runs until there are no more events in
+        the queue, then returns, allowing the caller to do other tasks or sleep
+        afterwards. This keeps CPU load low. Generally clients will never need to
+        call this function; it should only be used internally by async_mainloop.
+        """
+        while self.root.dooneevent(tkinter._tkinter.DONT_WAIT):
+            await asyncio.sleep(0)

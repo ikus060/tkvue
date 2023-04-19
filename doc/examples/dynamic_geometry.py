@@ -1,4 +1,4 @@
-# Copyright (C) 2021 IKUS Software inc. All rights reserved.
+# Copyright (C) 2023 IKUS Software inc. All rights reserved.
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -13,24 +13,31 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
+
 import tkvue
 
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel geometry="970x500" title="TKVue Test">
-    <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Label text="Selection number of row to display:" />
-        <Combobox values="{{ list(range(1, 100)) }}" textvariable="{{ count }}"/>
-        <Frame pack-fill="both" pack-expand="1" pack-side="left">
-            <Label pack-fill="x" pack-expand="1" for="i in range(1, count)" text="{{ 'row %s' % i }}" />
+<TopLevel title="TKVue Test" geometry="{{ '%sx%s' % (win_width, win_height) }}" >
+    <Frame pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
+        <Frame pack-fill="x" padding="0 3">
+            <Label text="Height:" pack-side="left" width="10"/>
+            <Scale variable="{{win_height}}" from="100" to="800" pack-fill="x" pack-side="left" />
+        </Frame>
+
+        <Frame pack-fill="x" padding="0 3">
+            <Label text="Width:" pack-side="left" width="10" />
+            <Scale variable="{{win_width}}" from="200" to="800" pack-fill="x" pack-side="left" />
         </Frame>
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({'count': 5})
+    data = tkvue.Context({"win_width": 200, "win_height": 100})
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
-if __name__ == "__main__":
-    dlg = RootDialog()
-    dlg.mainloop()
+dlg = RootDialog()
+dlg.mainloop()

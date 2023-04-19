@@ -13,24 +13,25 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
+import pkg_resources
 
 import tkvue
 
 
 class RootDialog(tkvue.Component):
     template = """
-<TopLevel title="TKVue Test" >
-    <Frame pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
-        <Label text="Available values: " width="20" pack-side="left"/>
-        <ComboBox pack-side="left" pack-expand="1" values="{{myvalues}}" textvariable="{{var1}}" />
-    </Frame>
-    <Frame pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
-        <Label text="{{'Available values:' + var1 }}" />
-    </Frame>
+<TopLevel geometry="450x450" title="TKVue Test">
+    <Label image="{{ bg }}" place-x="0" place-y="0" place-relwidth="1" place-relheight="1" compound="top"/>
+    <Button text="Click Me" pack-expand="1" />
 </TopLevel>
     """
-    data = tkvue.Context({"myvalues": ["zero", "one", "two", "three"], "var1": ""})
+    data = tkvue.Context(
+        {
+            "bg": pkg_resources.resource_filename(__name__, "bg.png"),
+        }
+    )
 
 
-dlg = RootDialog()
-dlg.mainloop()
+if __name__ == "__main__":
+    dlg = RootDialog()
+    dlg.mainloop()
