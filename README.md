@@ -46,7 +46,7 @@ pip install tkvue
 
 Once installed you may take a look at various examples available:
 
-<https://gitlab.com/ikus-soft/tkvue/-/tree/master/src/tkvue/examples>
+<https://gitlab.com/ikus-soft/tkvue/-/tree/master/doc/examples>
 
 Help is welcome to write proper documentation about how to use TKVue.
 
