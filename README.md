@@ -87,9 +87,9 @@ Other Tkinter-related projects worth mentioning:
 
 ## Changelog
 
-## Next Release
+## 2.1.0 (2023-04-20)
 
-* Add example to create Modal Dialog [modal.py](https://gitlab.com/ikus-soft/tkvue/-/blob/master/src/tkvue/examples/modal.py)
+* Add many examples for self documentation
 * Provide the `@tkvue.widget` annotation to register a new widget.
 * Provide the `@tkvue.attr` annotation to register the custom attributes of the widget.
 
