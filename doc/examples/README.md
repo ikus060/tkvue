@@ -21,6 +21,12 @@ It's then possible to create other widgets on top of the background. This soluti
 
 ![](background.png)
 
+## button.py
+
+The Button widget in Tkinter/TTK is a versatile widget that allows you to create clickable buttons in your GUI applications. You can customize the appearance of a Button by applying a style to it, which can define things like the font, color, and padding of the Button. Additionally, you can use the `compound=` option to add an image to the Button along with text. This can be useful for creating buttons with icons or other graphical elements. With `compound=`, you can control the positioning of the `image=` and `text=` within the Button and choose whether they overlap or appear side-by-side. Overall, the Button widget in Tkinter/TTK offers a lot of flexibility for creating interactive and visually appealing interfaces.
+
+![](button.png)
+
 ## combobox.png
 
 Give an examples how to use [`ComboBox`](https://www.tcl.tk/man/tcl/TkCmd/ttk_combobox.html#M13) widget with a binding for `values` and `textvariable` to create a bi-directional binding.
@@ -74,6 +80,12 @@ This is an examples how to show a Modal dialog using TKVue component.
 With the [`resizable="False False"`](https://wiki.tcl-lang.org/page/wm+resizable), it's possible to make your windows un-resizable by the user.
 
 ![](not_resizable.png)
+
+## pack.py
+
+The pack geometry manager is a layout manager in Tkinter/TTK that allows you to position widgets in a container by packing them in a horizontal or vertical direction. With pack, you can easily create layouts that adjust to the size of their parent container and automatically handle the positioning of widgets as the window is resized. This makes it a great choice for simple and dynamic layouts. Additionally, pack offers a few options for controlling the layout and behavior of widgets, such as `pack-fill=`, `pack-expand=`, and `pack-side`, giving you some flexibility in how you position and size widgets.
+
+![](pack.png)
 
 ## progressbar.py
 
