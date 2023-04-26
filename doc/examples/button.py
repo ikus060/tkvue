@@ -1,4 +1,4 @@
-# Copyright (C) 2021 IKUS Software inc. All rights reserved.
+# Copyright (C) 2023 IKUS Software. All rights reserved.
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
