@@ -592,23 +592,24 @@ class ScrolledFrame(ttk.Frame):
 
         # track changes to the canvas and frame width and sync them,
         # also updating the scrollbar
-        def _configure_interior(event):
-            # update the scrollbars to match the size of the inner frame
-            size = (interior.winfo_reqwidth(), interior.winfo_reqheight())
-            canvas.config(scrollregion="0 0 %s %s" % size)
-            if interior.winfo_reqwidth() != canvas.winfo_width():
-                # update the canvas's width to fit the inner frame
-                canvas.config(width=interior.winfo_reqwidth())
-
-        def _configure_canvas(event):
-            # update the inner frame's width to fill the canvas
-            if interior.winfo_reqwidth() != canvas.winfo_width():
-                canvas.itemconfigure(interior_id, width=canvas.winfo_width())
-            # Show / Hide vertical scrollbar
-            if canvas.yview() == (0.0, 1.0):
+        def _update_scroll_region(event):
+            # Update the scroll region when the interior widget is resized.
+            # Since we only scroll on y axis, take the width from canvas and height from interior.
+            canvas.config(scrollregion=(0, 0, interior.winfo_width(), interior.winfo_reqheight()))
+            # Show/hide scroll bar as needed
+            if canvas.winfo_height() > interior.winfo_reqheight():
                 self.vscrollbar.forget()
             else:
                 self.vscrollbar.pack(fill=tkinter.Y, side=tkinter.RIGHT, expand=tkinter.FALSE)
+
+        def _configure_canvas(event):
+            # The current width of the canvas
+            canvas_width = canvas.winfo_width()
+            # The interior widget's requested width
+            requested_width = interior.winfo_reqwidth()
+            # update the inner frame's width to fill the canvas
+            if canvas_width != requested_width:
+                canvas.itemconfigure(interior_id, width=canvas_width)
 
         def _on_mousewheel(event):
             # Skip scroll if canvas is bigger then content.
@@ -653,7 +654,7 @@ class ScrolledFrame(ttk.Frame):
         self.interior = interior = ttk.Frame(canvas)
         interior_id = canvas.create_window(0, 0, window=interior, anchor=tkinter.NW)
 
-        interior.bind("<Configure>", _configure_interior)
+        interior.bind("<Configure>", _update_scroll_region)
         canvas.bind("<Configure>", _configure_canvas)
         canvas.bind("<Enter>", _bind_to_mousewheel)
         canvas.bind("<Leave>", _unbind_from_mousewheel)

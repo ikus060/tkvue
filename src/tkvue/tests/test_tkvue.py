@@ -303,9 +303,11 @@ class DialogWithLoop(tkvue.Component):
 
 class DialogWithScrolledFrame(tkvue.Component):
     template = """
-    <TopLevel>
-        <ScrolledFrame id="scrolled_frame">
-            <Label id="label1" text="{{item}}" for="item in range(1,25)"/>
+    <TopLevel geometry="500x500">
+        <ScrolledFrame id="scrolled_frame" pack-fill="both" pack-expand="1">
+            <Frame for="item in range(1,10)" pack-fill="x"  pack-expand="1">
+                <Label id="label1" pack-fill="x" pack-expand="1" text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. " wrap="1"/>
+            </Frame>
         </ScrolledFrame>
     </TopLevel>
     """
@@ -553,6 +555,18 @@ class ComponentTest(unittest.TestCase):
     def test_scrolled_frame(self):
         with new_dialog(DialogWithScrolledFrame) as dlg:
             dlg.pump_events()
+
+    @unittest.skipUnless(IS_LINUX, "fail randomly on Windows and MacOS due to race condition")
+    def test_scrolled_frame_resize(self):
+        with new_dialog(DialogWithScrolledFrame) as dlg:
+            dlg.pump_events()
+            # Make sure scrollable is working
+            self.assertTrue(dlg.scrolled_frame.vscrollbar.winfo_ismapped())
+            # When dialog is resize
+            dlg.geometry('800x800')
+            dlg.pump_events()
+            # Then scrollbar is removed
+            self.assertFalse(dlg.scrolled_frame.vscrollbar.winfo_ismapped())
 
     def test_command_invalid(self):
         # Given a dialog with an invalid command name
