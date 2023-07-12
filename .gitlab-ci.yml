@@ -33,7 +33,8 @@ isort:
 linux:
   <<: *tox
   before_script:
-  - apt update && apt -y --no-install-recommends install xvfb xauth
+  - apt update
+  - apt -y --no-install-recommends install xvfb xauth
   - pip install tox
   artifacts:
     paths:
