@@ -589,76 +589,80 @@ class ScrolledFrame(ttk.Frame):
     """
 
     def __init__(self, master, *args, **kw):
-
-        # track changes to the canvas and frame width and sync them,
-        # also updating the scrollbar
-        def _update_scroll_region(event):
-            # Update the scroll region when the interior widget is resized.
-            # Since we only scroll on y axis, take the width from canvas and height from interior.
-            canvas.config(scrollregion=(0, 0, interior.winfo_width(), interior.winfo_reqheight()))
-            # Show/hide scroll bar as needed
-            if canvas.winfo_height() > interior.winfo_reqheight():
-                self.vscrollbar.forget()
-            else:
-                self.vscrollbar.pack(fill=tkinter.Y, side=tkinter.RIGHT, expand=tkinter.FALSE)
-
-        def _configure_canvas(event):
-            # The current width of the canvas
-            canvas_width = canvas.winfo_width()
-            # The interior widget's requested width
-            requested_width = interior.winfo_reqwidth()
-            # update the inner frame's width to fill the canvas
-            if canvas_width != requested_width:
-                canvas.itemconfigure(interior_id, width=canvas_width)
-
-        def _on_mousewheel(event):
-            # Skip scroll if canvas is bigger then content.
-            if canvas.yview() == (0.0, 1.0):
-                return
-            # Pick scroll directio dependinds of event <Button-?> or delta value <MouseWheel>
-            if event.num == 5 or event.delta < 0:
-                scroll = 1
-            elif event.num == 4 or event.delta > 0:
-                scroll = -1
-            canvas.yview_scroll(scroll, "units")
-
-        def _bind_to_mousewheel(event):
-            canvas.bind_all("<Button-4>", _on_mousewheel)
-            canvas.bind_all("<Button-5>", _on_mousewheel)
-            canvas.bind_all("<MouseWheel>", _on_mousewheel)  # On Windows
-
-        def _unbind_from_mousewheel(event):
-            canvas.unbind_all("<Button-4>")
-            canvas.unbind_all("<Button-5>")
-            canvas.unbind_all("<MouseWheel>")  # On Windows
-
-        def _update_bg(event):
-            style_name = self.cget('style') or 'TFrame'
-            bg = ttk.Style(master=master).lookup(style_name, "background")
-            canvas.configure(bg=bg)
-            self.interior.configure(style=style_name)
-
         ttk.Frame.__init__(self, master, *args, **kw)
 
         # create a canvas object and a vertical scrollbar for scrolling it
         self.vscrollbar = ttk.Scrollbar(self, orient=tkinter.VERTICAL)
-        canvas = tkinter.Canvas(self, bd=0, highlightthickness=0, yscrollcommand=self.vscrollbar.set)
-        canvas.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.TRUE)
-        self.vscrollbar.config(command=canvas.yview)
+        self.canvas = tkinter.Canvas(self, bd=0, highlightthickness=0, yscrollcommand=self.vscrollbar.set)
+        self.canvas.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.TRUE)
+        self.vscrollbar.config(command=self.canvas.yview)
 
         # reset the view
-        canvas.xview_moveto(0)
-        canvas.yview_moveto(0)
+        self.canvas.xview_moveto(0)
+        self.canvas.yview_moveto(0)
 
         # create a frame inside the canvas which will be scrolled with it
-        self.interior = interior = ttk.Frame(canvas)
-        interior_id = canvas.create_window(0, 0, window=interior, anchor=tkinter.NW)
+        self.interior = ttk.Frame(self.canvas)
+        self.interior_id = self.canvas.create_window(0, 0, window=self.interior, anchor=tkinter.NW)
 
-        interior.bind("<Configure>", _update_scroll_region)
-        canvas.bind("<Configure>", _configure_canvas)
-        canvas.bind("<Enter>", _bind_to_mousewheel)
-        canvas.bind("<Leave>", _unbind_from_mousewheel)
-        canvas.bind("<<ThemeChanged>>", _update_bg)
+        self.interior.bind("<Configure>", self._update_scroll_region)
+        self.canvas.bind("<Configure>", self._configure_canvas)
+        self.canvas.bind("<Enter>", self._bind_to_mousewheel)
+        self.canvas.bind("<Leave>", self._unbind_from_mousewheel)
+        self.canvas.bind("<<ThemeChanged>>", self._update_bg)
+
+    # track changes to the canvas and frame width and sync them,
+    # also updating the scrollbar
+    def _update_scroll_region(self, event):
+        # Update the scroll region when the interior widget is resized.
+        # Since we only scroll on y axis, take the width from canvas and height from interior.
+        self.canvas.config(scrollregion=(0, 0, self.interior.winfo_width(), self.interior.winfo_reqheight()))
+        # Show/hide scroll bar as needed
+        if self.canvas.winfo_height() > self.interior.winfo_reqheight():
+            self.vscrollbar.forget()
+        else:
+            self.vscrollbar.pack(fill=tkinter.Y, side=tkinter.RIGHT, expand=tkinter.FALSE)
+
+    def _configure_canvas(self, event):
+        # The current width of the canvas
+        canvas_width = self.canvas.winfo_width()
+        # The interior widget's requested width
+        interior_width = self.interior.winfo_width()
+        # update the inner frame's width to fill the canvas
+        if canvas_width != interior_width:
+            self.canvas.itemconfigure(self.interior_id, width=canvas_width)
+        else:
+            if self.canvas.winfo_height() > self.interior.winfo_reqheight():
+                self.vscrollbar.forget()
+            else:
+                self.vscrollbar.pack(fill=tkinter.Y, side=tkinter.RIGHT, expand=tkinter.FALSE)
+
+    def _on_mousewheel(self, event):
+        # Skip scroll if canvas is bigger then content.
+        if self.canvas.yview() == (0.0, 1.0):
+            return
+        # Pick scroll directio dependinds of event <Button-?> or delta value <MouseWheel>
+        if event.num == 5 or event.delta < 0:
+            scroll = 1
+        elif event.num == 4 or event.delta > 0:
+            scroll = -1
+        self.canvas.yview_scroll(scroll, "units")
+
+    def _bind_to_mousewheel(self, event):
+        self.canvas.bind_all("<Button-4>", self._on_mousewheel)
+        self.canvas.bind_all("<Button-5>", self._on_mousewheel)
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)  # On Windows
+
+    def _unbind_from_mousewheel(self, event):
+        self.canvas.unbind_all("<Button-4>")
+        self.canvas.unbind_all("<Button-5>")
+        self.canvas.unbind_all("<MouseWheel>")  # On Windows
+
+    def _update_bg(self, event):
+        style_name = self.cget('style') or 'TFrame'
+        bg = ttk.Style(master=self.master).lookup(style_name, "background")
+        self.canvas.configure(bg=bg)
+        self.interior.configure(style=style_name)
 
 
 class TemplateError(Exception):
