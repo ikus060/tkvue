@@ -87,6 +87,18 @@ Other Tkinter-related projects worth mentioning:
 
 ## Changelog
 
+## 2.1.3 (2023-07-25)
+
+* Define minimum height for ScrolledFrame.
+
+## 2.1.2 (2023-07-13)
+
+* Fix display of scrollbar in ScrolledFrame when resize on Y axis.
+
+## 2.1.1 (2023-07-12)
+
+* Fix display of scrollbar on initialization.
+
 ## 2.1.0 (2023-04-20)
 
 * Add many examples for self documentation
