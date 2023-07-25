@@ -593,7 +593,14 @@ class ScrolledFrame(ttk.Frame):
 
         # create a canvas object and a vertical scrollbar for scrolling it
         self.vscrollbar = ttk.Scrollbar(self, orient=tkinter.VERTICAL)
-        self.canvas = tkinter.Canvas(self, bd=0, highlightthickness=0, yscrollcommand=self.vscrollbar.set)
+        min_height = self.vscrollbar.winfo_reqheight()
+        self.canvas = tkinter.Canvas(
+            self,
+            borderwidth=0,
+            highlightthickness=0,
+            yscrollcommand=self.vscrollbar.set,
+            height=min_height,
+        )
         self.canvas.pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=tkinter.TRUE)
         self.vscrollbar.config(command=self.canvas.yview)
 
