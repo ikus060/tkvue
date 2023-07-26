@@ -407,13 +407,13 @@ def _configure_image(widget, image_path):
         _stop_animation()
 
 
-@attr(ttk.Widget, "wrap")
+@attr(ttk.Label, "wrap")
 def _configure_wrap(widget, wrap):
     # Support Text wrapping
     if wrap.lower() in ["true", "1"]:
         widget.bind(
             "<Configure>",
-            lambda e: widget.configure(wraplen=widget.winfo_width()),
+            lambda e: widget.configure(wraplength=widget.winfo_width()),
             add="+",
         )
 
