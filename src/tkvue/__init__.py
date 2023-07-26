@@ -671,6 +671,14 @@ class ScrolledFrame(ttk.Frame):
         self.canvas.configure(bg=bg)
         self.interior.configure(style=style_name)
 
+    def configure(self, cnf=None, **kw):
+        """
+        Ovewrite configure to update style of canvas and interior.
+        """
+        super().configure(cnf, **kw)
+        if 'style' in kw:
+            self._update_bg(None)
+
 
 class TemplateError(Exception):
     """
