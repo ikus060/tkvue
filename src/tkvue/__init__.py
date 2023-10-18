@@ -939,6 +939,8 @@ class Component:
             self.mainloop = self._mainloop
 
     def __getattr__(self, name):
+        if 'root' not in self.__dict__:
+            raise AttributeError(name)
         return getattr(self.root, name)
 
     def get_event_loop(self):
