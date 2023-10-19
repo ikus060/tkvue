@@ -217,6 +217,8 @@ class Dialog(tkvue.Component):
         <Frame id="people" pack-fill="x" pack-expand="1">
             <Label for="i in names" text="{{i}}" />
         </Frame>
+        <label id="count1_label" text="{{count1}}" />
+        <label id="count2_label" text="{{count2}}" />
         <Frame pack-fill="x" pack-expand="1">
             <Radiobutton id="blue" variable="{{selected_color}}" value="blue" text="blue"/>
             <Radiobutton id="red" variable="{{selected_color}}" value="red" text="red"/>
@@ -246,6 +248,7 @@ class Dialog(tkvue.Component):
                 "selected_color": "blue",
                 "selected_number": 1,
                 "checkbutton_selected": True,
+                "count1": tkvue.computed(lambda x: len(x.names)),
             }
         )
         super().__init__(master=master)
@@ -255,6 +258,10 @@ class Dialog(tkvue.Component):
 
     def funcation_call_with_args(self, value):
         self.value = value
+
+    @tkvue.computed
+    def count2(self, context):
+        return len(context.names)
 
 
 class DialogWithImage(tkvue.Component):
@@ -292,7 +299,7 @@ class DialogWithTooltip(tkvue.Component):
 class DialogWithLoop(tkvue.Component):
     template = """
     <TopLevel>
-        <Label id="label1" text="{{item}}" for="item in items"/>
+        <Label text="{{item}}" for="item in items"/>
     </TopLevel>
     """
 
@@ -306,7 +313,7 @@ class DialogWithScrolledFrame(tkvue.Component):
     <TopLevel geometry="500x500">
         <ScrolledFrame id="scrolled_frame" pack-fill="both" pack-expand="1">
             <Frame for="item in range(1,10)" pack-fill="x"  pack-expand="1">
-                <Label id="label1" pack-fill="x" pack-expand="1" text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. " wrap="1"/>
+                <Label pack-fill="x" pack-expand="1" text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. " wrap="1"/>
             </Frame>
         </ScrolledFrame>
     </TopLevel>
@@ -336,7 +343,7 @@ class DialogNotResizable(tkvue.Component):
     template = """
     <TopLevel geometry="322x261" resizable="False False">
         <ScrolledFrame id="scrolled_frame">
-            <Label id="label1" text="{{item}}" for="item in range(1,25)"/>
+            <Label text="{{item}}" for="item in range(1,25)"/>
         </ScrolledFrame>
     </TopLevel>
     """
@@ -620,3 +627,17 @@ class ComponentTest(unittest.TestCase):
             dlg.data['theme_value'] = 'clam'
             # Then theme get updated
             self.assertEqual('clam', ttk.Style(dlg.root).theme_use())
+
+    def test_computed(self):
+        # Given a dialog with computed attribute
+        with new_dialog(Dialog) as dlg:
+            dlg.pump_events()
+            # Then the count value updates the labels
+            self.assertEqual(dlg.count1_label.cget('text'), 4)
+            self.assertEqual(dlg.count1_label.cget('text'), 4)
+            # When uding the names
+            dlg.data.names = ["patrik", "annik"]
+            dlg.pump_events()
+            # Then the label get updated too.
+            self.assertEqual(dlg.count1_label.cget('text'), 2)
+            self.assertEqual(dlg.count1_label.cget('text'), 2)

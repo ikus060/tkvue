@@ -71,6 +71,23 @@ for a in dir(ttk):
         _widgets[a.lower()] = cls
 
 
+def computed(func):
+    """
+    Create computed attributes.
+
+    This could be used as annotation on Component's function
+
+    class MyComponent(tkvue.Component):
+
+        @tkvue.computed()
+        def count(self, context):
+            return len(context.names)
+    """
+    assert callable(func), 'tkvue.computed() required a function'
+    func.__computed__ = True
+    return func
+
+
 def configure_tk(
     basename=None,
     classname="Tk",
@@ -129,15 +146,6 @@ def create_toplevel(master=None):
     root.bind("<<ThemeChanged>>", _update_bg)
 
     return root
-
-
-def computed(func):
-    """
-    Create computed attributes.
-    """
-    assert callable(func)
-    func.__computed__ = True
-    return func
 
 
 def extract_tkvue(fileobj, keywords, comment_tags, options):
@@ -307,6 +315,29 @@ class Context(collections.abc.MutableMapping):
 
     def __bool__(self):
         return True
+
+
+def _create_command(component, value, context):
+    """
+    Command may only be define when creating widget.
+    So let process this attribute before creating the widget.
+    """
+    if value.startswith("{{"):
+        raise ValueError("cannot use binding ({{) in `command` attribute: " + value)
+    available_functions = {k: getattr(component, k) for k in dir(component) if callable(getattr(component, k))}
+    # May need to adjust this to detect expression.
+    if "(" in value or "=" in value:
+
+        def func():
+            return context.eval(value, **available_functions)
+
+    else:
+        func = available_functions.get(value, None)
+        if func is None or not hasattr(func, "__call__"):
+            raise ValueError(
+                '`command` attribute must define a function to be called `function_name(arg1, arg2)`: ' + value
+            )
+    return func
 
 
 def _configure(widget, key, value):
@@ -733,25 +764,49 @@ class Parser(HTMLParser):
         self.node = self.node.parent
 
 
-class TkVue:
-    def __init__(self, component, master):
-        assert component
-        assert hasattr(component, "template"), "component %s must define a template" % component.__class__.__name__
+class Component:
+    template = """<Label text="default template" />"""
 
-        # Keep reference to the component.
-        self.component = component
-        if not hasattr(self.component, "data"):
-            self.component.data = Context()
+    def __init_subclass__(cls, **kwargs):
+        if cls not in _components:
+            _components[cls.__name__.lower()] = cls
+        super().__init_subclass__(**kwargs)
+
+    def __init__(self, master=None):
+        # Check if template is provided.
+        assert hasattr(self, "template"), "component %s must define a template" % self.__class__.__name__
+        self.root = None
+
+        # Collect __computed__ functions
+        computed_data = {}
+        computed_attrs = [
+            key
+            for key in dir(self)
+            if callable(getattr(self, key))
+            if getattr(getattr(self, key), '__computed__', False)
+        ]
+        for attr in computed_attrs:
+            computed_data[attr] = getattr(self, attr)
+
+        # Initialize a Context used to store the state.
+        if not hasattr(self, "data"):
+            self.data = Context(initial_data=computed_data)
+        else:
+            self.data = Context(initial_data=computed_data, parent=self.data)
 
         # Read the template
         parser = Parser()
-        if isinstance(component.template, bytes):
-            parser.feed(component.template.decode("utf8"))
+        if isinstance(self.template, bytes):
+            parser.feed(self.template.decode("utf8"))
         else:
-            parser.feed(component.template)
+            parser.feed(self.template)
 
         # Generate the widget from template.
-        self.component.root = self._walk(master=master, tree=parser.tree, context=self.component.data)
+        self.root = self._walk(master=master, tree=parser.tree, context=self.data)
+
+        # Replace mainloop implementation for TopLevel
+        if hasattr(self.root, 'mainloop'):
+            self.mainloop = self._mainloop
 
     def _bind_attr(self, widget, value, func, context):
         if value.startswith("{{") and value.endswith("}}"):
@@ -787,7 +842,6 @@ class TkVue:
         # Support dual-databinding
         self._bind_attr(widget, value, lambda new_value, var=var: var.set(new_value), context)
         var.trace_add("write", lambda *args, var=var: context.set(expr, var.get()))
-        # TODO trace_remove
         widget.configure({attr: var})
 
     def _bind_attrs(self, master, tag, attrs, context):
@@ -807,7 +861,7 @@ class TkVue:
         # The "command" attribute must be pass during widget construction.
         kwargs = {}
         if "command" in attrs:
-            kwargs["command"] = self._create_command(attrs["command"], context)
+            kwargs["command"] = _create_command(self, attrs["command"], context)
 
         #
         # Create widget.
@@ -818,7 +872,8 @@ class TkVue:
         # Assign widget to variables.
         #
         if "id" in attrs:
-            setattr(self.component, attrs["id"], widget)
+            assert not hasattr(self, attrs["id"]), 'widget id conflict with existing value'
+            setattr(self, attrs["id"], widget)
 
         # Check if args contains pack or :pack
         # If the widget doesn't need to be pack. We don't need to compute changes.
@@ -845,11 +900,6 @@ class TkVue:
                 continue
             elif k in ["textvariable", "variable"]:
                 self._dual_bind_attr(widget, v, k, context)
-            elif k == "selected":
-                # Special attribute for Button, Checkbutton
-                self._bind_attr(
-                    widget, v, lambda value: widget.state(["selected" if value else "!selected", "!alternate"]), context
-                )
             else:
                 # Lookup attribute registry
                 func = [func for a, func in _attrs.items() if a[1] == k if isinstance(widget, a[0])]
@@ -861,30 +911,6 @@ class TkVue:
                 self._bind_attr(widget, v, func, context)
 
         return widget
-
-    def _create_command(self, value, context):
-        """
-        Command may only be define when creating widget.
-        So let process this attribute before creating the widget.
-        """
-        if value.startswith("{{"):
-            raise ValueError("cannot use binding ({{) in `command` attribute: " + value)
-        available_functions = {
-            k: getattr(self.component, k) for k in dir(self.component) if callable(getattr(self.component, k))
-        }
-        # May need to adjust this to detect expression.
-        if "(" in value or "=" in value:
-
-            def func():
-                return context.eval(value, **available_functions)
-
-        else:
-            func = available_functions.get(value, None)
-            if func is None or not hasattr(func, "__call__"):
-                raise ValueError(
-                    '`command` attribute must define a function to be called `function_name(arg1, arg2)`: ' + value
-                )
-        return func
 
     # TODO Make this function static.
     def _walk(self, master, tree, context):
@@ -922,28 +948,18 @@ class TkVue:
             self._walk(master=interior, tree=child, context=context)
         return widget
 
-
-class Component:
-    template = """<Label text="default template" />"""
-
-    def __init_subclass__(cls, **kwargs):
-        if cls not in _components:
-            _components[cls.__name__.lower()] = cls
-        super().__init_subclass__(**kwargs)
-
-    def __init__(self, master=None):
-        self.root = None
-        self.vue = TkVue(self, master=master)
-        # Replace mainloop implementation for TopLevel
-        if hasattr(self.root, 'mainloop'):
-            self.mainloop = self._mainloop
-
     def __getattr__(self, name):
+        """
+        Override getattr to behave like a tkinter widget.
+        """
         if 'root' not in self.__dict__:
             raise AttributeError(name)
         return getattr(self.root, name)
 
     def get_event_loop(self):
+        """
+        Return the asyncio event loop to be used by component subclass to execute asynchronous operation.
+        """
         return asyncio.get_event_loop()
 
     def _mainloop(self):
@@ -951,24 +967,19 @@ class Component:
 
     async def _async_mainloop(self):
         '''
-        An asynchronous implementation of tkinter mainloop
-        '''
-        while True:
-            try:
-                self.root.winfo_exists()  # Throw TclError if the main Windows is destroyed
-                await self._update_root()
-            except tkinter.TclError:
-                break
-            await asyncio.sleep(0.01)
+        An asynchronous implementation of tkinter mainloop to cooperate with asyncio.
 
-    async def _update_root(self):
-        """
         This coroutine runs a complete iteration of the tkinter event loop for a
         root. It yields in between each individual event, which prevents it from
         blocking the asyncio event loop. It runs until there are no more events in
         the queue, then returns, allowing the caller to do other tasks or sleep
-        afterwards. This keeps CPU load low. Generally clients will never need to
-        call this function; it should only be used internally by async_mainloop.
-        """
-        while self.root.dooneevent(tkinter._tkinter.DONT_WAIT):
-            await asyncio.sleep(0)
+        afterwards. This keeps CPU load low.
+        '''
+        while True:
+            try:
+                self.root.winfo_exists()  # Throw TclError if the main Windows is destroyed
+                while self.root.dooneevent(tkinter._tkinter.DONT_WAIT):
+                    await asyncio.sleep(0)
+            except tkinter.TclError:
+                break
+            await asyncio.sleep(0.01)
