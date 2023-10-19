@@ -13,7 +13,7 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
-import pkg_resources
+import os
 
 import tkvue
 
@@ -30,7 +30,7 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"show": True, "icon_path": pkg_resources.resource_filename(__name__, "dots.gif")})
+    data = tkvue.Context({"show": True, "icon_path": os.path.normpath(os.path.join(__file__, '../dots.gif'))})
 
 
 if __name__ == "__main__":

@@ -13,14 +13,30 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
+
+try:
+    # Python < 3.12
+    import pkg_resources
+
+    def resource_path(fn):
+        return pkg_resources.resource_filename(__package__, fn)
+
+except ImportError:
+    # Python >=3.12
+    import importlib.resources
+
+    def resource_path(fn):
+
+        with importlib.resources.files(__package__).joinpath(fn) as p:
+            return str(p)
+
+
 import os
 import sys
 import tkinter
 import tkinter.ttk as ttk
 import unittest
 from contextlib import contextmanager
-
-import pkg_resources
 
 import tkvue
 
@@ -495,7 +511,7 @@ class ComponentTest(unittest.TestCase):
             self.assertEqual("", dlg.button.cget("image"))
             self.assertEqual("", dlg.label.cget("image"))
             # When settings image_path
-            dlg.data["image_path"] = pkg_resources.resource_filename(__name__, "python_icon.png")
+            dlg.data["image_path"] = resource_path("python_icon.png")
             # Then Button and Label get update with an image
             self.assertTrue(dlg.button.cget("image")[0].startswith("pyimage"))
             self.assertTrue(dlg.label.cget("image")[0].startswith("pyimage"))
@@ -506,7 +522,7 @@ class ComponentTest(unittest.TestCase):
             self.assertEqual("", dlg.button.cget("image"))
             self.assertEqual("", dlg.label.cget("image"))
             # When settings image_path
-            dlg.data["image_path"] = pkg_resources.resource_filename(__name__, "preloader.gif")
+            dlg.data["image_path"] = resource_path("preloader.gif")
             # Then Button and Label get update with an image
             self.assertTrue(dlg.button.cget("image")[0].startswith("pyimage"))
             self.assertTrue(dlg.label.cget("image")[0].startswith("pyimage"))

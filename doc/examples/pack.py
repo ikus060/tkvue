@@ -15,7 +15,7 @@
 # USA
 import tkinter.ttk as ttk
 
-import pkg_resources
+import os
 
 import tkvue
 
@@ -28,30 +28,30 @@ class RootDialog(tkvue.Component):
     <label text="Using pack geometry manager it's possible to control widgets position and size" padding="10"/>
     <Frame pack-fill="x">
         <label text="Fixed size using width=" />
-        <Button id="label" text="width=45" style="left.TButton" pack-pady="0 15" width="45"/>
+        <Button text="width=45" style="left.TButton" pack-pady="0 15" width="45"/>
     </Frame>
 
     <Frame pack-fill="x" >
         <label text="Stacked on the left" />
-        <Button id="label" text="pack-side=left" pack-pady="0 15" pack-padx="0 5" pack-side="left"/>
-        <Button id="label" text="pack-side=left" pack-pady="0 15" pack-padx="0 5" pack-side="left"/>
-        <Button id="label" text="pack-side=left" pack-pady="0 15" pack-padx="0 5" pack-side="left"/>
+        <Button text="pack-side=left" pack-pady="0 15" pack-padx="0 5" pack-side="left"/>
+        <Button text="pack-side=left" pack-pady="0 15" pack-padx="0 5" pack-side="left"/>
+        <Button text="pack-side=left" pack-pady="0 15" pack-padx="0 5" pack-side="left"/>
     </Frame>
 
     <Frame pack-fill="both" pack-expand="1">
         <label text="Take all vertical space" />
-        <Button id="label" text="pack-fill=x" pack-pady="0 15" pack-fill="x"/>
+        <Button text="pack-fill=x" pack-pady="0 15" pack-fill="x"/>
 
         <label text="Take all horizontal space" />
-        <Button id="label" text="pack-fill=y pack-expand=1" pack-pady="0 15" pack-fill="y"  pack-expand="1"/>
+        <Button text="pack-fill=y pack-expand=1" pack-pady="0 15" pack-fill="y"  pack-expand="1"/>
 
         <label text="Take all vertical & horizontal space" />
-        <Button id="label" text="pack-fill=both pack-expand=1" pack-pady="0 15" pack-fill="both"  pack-expand="1"/>
+        <Button text="pack-fill=both pack-expand=1" pack-pady="0 15" pack-fill="both"  pack-expand="1"/>
 
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"icon_path": pkg_resources.resource_filename(__name__, "python_icon.png")})
+    data = tkvue.Context({"icon_path": os.path.normpath(os.path.join(__file__, '../python_icon.png'))})
 
     def __init__(self, master=None):
         super().__init__(master)

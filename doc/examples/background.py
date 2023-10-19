@@ -13,7 +13,7 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
-import pkg_resources
+import os
 
 import tkvue
 
@@ -27,7 +27,7 @@ class RootDialog(tkvue.Component):
     """
     data = tkvue.Context(
         {
-            "bg": pkg_resources.resource_filename(__name__, "bg.png"),
+            "bg": os.path.normpath(os.path.join(__file__, '../bg.png')),
         }
     )
 

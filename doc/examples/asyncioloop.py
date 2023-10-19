@@ -17,7 +17,7 @@
 import asyncio
 
 import aiohttp
-import pkg_resources
+import os
 
 import tkvue
 
@@ -50,7 +50,7 @@ class RootDialog(tkvue.Component):
         self.data = tkvue.Context(
             {
                 "show": True,
-                "icon_path": pkg_resources.resource_filename(__name__, "dots.gif"),
+                "icon_path": os.path.normpath(os.path.join(__file__, '../dots.gif')),
                 'checking_for_update': False,  # True when background thread is running.
                 'is_latest': None,
                 'check_latest_version_error': None,

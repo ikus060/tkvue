@@ -404,6 +404,8 @@ def _configure_image(widget, image_path):
         if not getattr(widget, "_func_id", None):
             widget._func_id = widget.bind("<Destroy>", _stop_animation)
 
+    # Convert image _path to string (support PosixPath)
+    image_path = str(image_path) if image_path else image_path
     # Create a new image
     if not image_path:
         # Remove image

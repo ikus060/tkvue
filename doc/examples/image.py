@@ -13,7 +13,7 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
-import pkg_resources
+import os
 
 import tkvue
 
@@ -23,27 +23,27 @@ class RootDialog(tkvue.Component):
 <TopLevel title="TKVue Test">
     <Frame pack-fill="both" pack-expand="1">
         <label text="compound none" />
-        <Label id="label" text="gastonf" image="{{icon_path}}" compound="none"/>
+        <Label text="gastonf" image="{{icon_path}}" compound="none"/>
         <label text="" />
         <label text="compound bottom" />
-        <Label id="label" text="gastonf" image="{{icon_path}}" compound="bottom"/>
+        <Label text="gastonf" image="{{icon_path}}" compound="bottom"/>
         <label text="" />
         <label text="compound top" />
-        <Label id="label" text="gastonf" image="{{icon_path}}" compound="top"/>
+        <Label text="gastonf" image="{{icon_path}}" compound="top"/>
         <label text="" />
         <label text="compound left" />
-        <Label id="label" text="gastonf" image="{{icon_path}}" compound="left"/>
+        <Label text="gastonf" image="{{icon_path}}" compound="left"/>
         <label text="" />
         <label text="compound right" />
-        <Label id="label" text="gastonf" image="{{icon_path}}" compound="right"/>
+        <Label text="gastonf" image="{{icon_path}}" compound="right"/>
         <label text="" />
         <label text="compound center" />
-        <Label id="label" text="gastonf" image="{{icon_path}}" compound="center"/>
+        <Label text="gastonf" image="{{icon_path}}" compound="center"/>
         <label text="" />
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"icon_path": pkg_resources.resource_filename(__name__, "python_icon.png")})
+    data = tkvue.Context({"icon_path": os.path.normpath(os.path.join(__file__, '../python_icon.png'))})
 
 
 if __name__ == "__main__":

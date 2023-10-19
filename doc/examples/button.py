@@ -15,7 +15,7 @@
 # USA
 import tkinter.ttk as ttk
 
-import pkg_resources
+import os
 
 import tkvue
 
@@ -28,44 +28,44 @@ class RootDialog(tkvue.Component):
 <label text="With TTK Widgets, you may need to create several styles to customize the appearance of the buttons." padding="10"/>
     <Frame pack-fill="both" pack-expand="1" pack-side="left">
         <label text="Default button" />
-        <Button id="label" text="Click Me" pack-pady="0 15"/>
+        <Button text="Click Me" pack-pady="0 15"/>
 
         <label text="style=left.TButton" />
-        <Button id="label" text="Click Me" style="left.TButton" pack-pady="0 15"/>
+        <Button text="Click Me" style="left.TButton" pack-pady="0 15"/>
 
         <label text="style=right.TButton" />
-        <Button id="label" text="Click Me" style="right.TButton" pack-pady="0 15"/>
+        <Button text="Click Me" style="right.TButton" pack-pady="0 15"/>
 
         <label text="style=blue.TButton" />
-        <Button id="label" text="Click Me" style="blue.TButton" pack-pady="0 15"/>
+        <Button text="Click Me" style="blue.TButton" pack-pady="0 15"/>
 
         <label text="style=blue.TButton compound=right" />
-        <Button id="label" text="Click Me" style="blue.TButton" image="{{icon_path}}" compound="right" pack-pady="0 15"/>
+        <Button text="Click Me" style="blue.TButton" image="{{icon_path}}" compound="right" pack-pady="0 15"/>
 
     </Frame>
     <Frame pack-fill="both" pack-expand="1" pack-side="left">
         <label text="compound=none" />
-        <Button id="label" text="Click Me" image="{{icon_path}}" compound="none" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="none" pack-pady="0 15"/>
         
         <label text="compound=bottom" />
-        <Button id="label" text="Click Me" image="{{icon_path}}" compound="bottom" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="bottom" pack-pady="0 15"/>
         
         <label text="compound=top" />
-        <Button id="label" text="Click Me" image="{{icon_path}}" compound="top" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="top" pack-pady="0 15"/>
         
         <label text="compound=left" />
-        <Button id="label" text="Click Me" image="{{icon_path}}" compound="left" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="left" pack-pady="0 15"/>
         
         <label text="compound=right" />
-        <Button id="label" text="Click Me" image="{{icon_path}}" compound="right" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="right" pack-pady="0 15"/>
         
         <label text="compound=center" />
-        <Button id="label" text="Click Me" image="{{icon_path}}" compound="center" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="center" pack-pady="0 15"/>
         
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"icon_path": pkg_resources.resource_filename(__name__, "python_icon.png")})
+    data = tkvue.Context({"icon_path": os.path.normpath(os.path.join(__file__, '../python_icon.png'))})
 
     def __init__(self, master=None):
         super().__init__(master)

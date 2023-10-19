@@ -1,24 +1,22 @@
 image: python:3-bullseye
 
 stages:
-- test
-- bdist
-- upload
+  - test
+  - bdist
+  - upload
 
-.tox:  &tox
+.tox: &tox
   stage: test
-  variables:
-    TOXENV: $CI_JOB_NAME
   before_script:
-  - pip install tox
+    - pip install tox
   script:
-  - export TOXENV=${TOXENV:-$CI_JOB_NAME}
-  - echo TOXENV=$TOXENV
-  - tox
+    - export TOXENV=${TOXENV:-$CI_JOB_NAME}
+    - echo TOXENV=$TOXENV
+    - tox
   artifacts:
     paths:
-    - coverage-*.xml
-    - xunit-*.xml
+      - coverage-*.xml
+      - xunit-*.xml
     expire_in: 1 day
 
 flake8:
@@ -32,68 +30,79 @@ isort:
 
 linux:
   <<: *tox
+  image: $IMAGE
   before_script:
-  - apt update
-  - apt -y --no-install-recommends install xvfb xauth
-  - pip install tox
+    - apt update
+    - apt -y --no-install-recommends install xvfb xauth
+    - pip install tox
+  variables:
+    TOXENV: linux
   artifacts:
     paths:
-    - coverage-*.xml
-    - xunit-*.xml
+      - coverage-*.xml
+      - xunit-*.xml
     expire_in: 1 day
+  parallel:
+    matrix:
+      - IMAGE: python:3.7
+      - IMAGE: python:3.8
+      - IMAGE: python:3.9
+      - IMAGE: python:3.10
+      - IMAGE: python:3.11
+      - IMAGE: python:3.12
 
 win32:
   before_script:
-  - choco install python3 --no-progress --version=3.7.9 -y -f --forcex86 --source "'https://nexus.ikus-soft.com/repository/choco/'"
-  - $Env:path += ";C:\Python37\Scripts\;C:\Python37\;"
-  - $Env:path
-  - python.exe -VV
-  - pip.exe install tox
+    - choco install python3 --no-progress --version=3.7.9 -y -f --forcex86 --source "'https://nexus.ikus-soft.com/repository/choco/'"
+    - $Env:path += ";C:\Python37\Scripts\;C:\Python37\;"
+    - $Env:path
+    - python.exe -VV
+    - pip.exe install tox
   script:
-  - tox.exe
+    - tox.exe
   stage: test
   tags:
-  - windows
+    - windows
   artifacts:
     paths:
-    - coverage-*.xml
-    - xunit-*.xml
+      - coverage-*.xml
+      - xunit-*.xml
     expire_in: 1 day
 
 macos:
   script:
-  - tox
+    - tox
   stage: test
   tags:
-  - macos
+    - macos
   artifacts:
     paths:
-    - coverage-*.xml
-    - xunit-*.xml
+      - coverage-*.xml
+      - xunit-*.xml
     expire_in: 1 day
 
-bdist:py3: 
+bdist:py3:
   stage: bdist
   needs: []
   script:
-  - pip3 install wheel
-  - python3 setup.py sdist bdist_wheel
+    - pip3 install wheel
+    - python3 setup.py sdist bdist_wheel
   dependencies: []
   artifacts:
     paths:
-    - dist/*.whl
+      - dist/*.whl
 
 upload:sonar:
   stage: upload
   needs:
-  - linux
-  - macos
-  - win32
+    - linux
+    - macos
+    - win32
   image: sonarsource/sonar-scanner-cli
   variables:
     SONAR_PROJECT_BASE_DIR: "${CI_PROJECT_DIR}"
   script:
-  - sonar-scanner -X -Dsonar.python.coverage.reportPaths=coverage-*.xml -Dsonar.python.xunit.reportPaths=xunit-*.xml -Dsonar.host.url=$SONAR_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=$CI_PROJECT_NAME -Dsonar.projectVersion=$(git describe) -Dsonar.qualitygate.wait=true
+    - sonar-scanner -X -Dsonar.python.coverage.reportPaths=coverage-*.xml -Dsonar.python.xunit.reportPaths=xunit-*.xml -Dsonar.host.url=$SONAR_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=$CI_PROJECT_NAME -Dsonar.projectVersion=$(git describe) -Dsonar.qualitygate.wait=true
 
 upload:wheel:
   stage: upload
