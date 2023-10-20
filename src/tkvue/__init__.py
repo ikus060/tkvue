@@ -525,6 +525,13 @@ def _configure_theme(widget, value):
     ttk.Style(master=widget).theme_use(value)
 
 
+def _real_widget(widget):
+    """
+    Return Component's inner widget or the widget itself.
+    """
+    return widget.root if isinstance(widget, Component) else widget
+
+
 @widget("tooltip")
 class ToolTip(ttk.Frame):
     """
@@ -674,7 +681,7 @@ class Loop:
             widget = self.create_widget(self.idx)
             # Make sure to pack widget at the right location.
             # TODO Fix parent when all item get deleteds
-            widget.pack(after=self.widgets[-1] if self.widgets else None)
+            widget.pack(after=_real_widget(self.widgets[-1]) if self.widgets else None)
             self.widgets.append(widget)
             self.idx += 1
         # We may need to delete widgets
@@ -952,7 +959,7 @@ class Component:
                 self._dual_bind_attr(widget, v, k, context)
             else:
                 # Lookup attribute registry
-                real_widget = widget.root if isinstance(widget, Component) else widget
+                real_widget = _real_widget(widget)
                 func = [func for a, func in _attrs.items() if a[1] == k if isinstance(real_widget, a[0])]
                 if func:
                     func = functools.partial(func[0], widget)
