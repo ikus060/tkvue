@@ -344,6 +344,66 @@ def _configure(widget, key, value):
     widget.configure(**{key: value})
 
 
+@attr(ttk.Widget, "id")
+def _configure_id_noop(widget, value):
+    """
+    No-op for `id` attribute already handle at creation of widget.
+    """
+    # Do nothing
+    pass
+
+
+@attr(ttk.Widget, "command")
+def _configure_command_noop(widget, value):
+    """
+    No-op for `command` attribute already handle at creation of widget.
+    """
+    # Do nothing
+    pass
+
+
+@attr(ttk.Widget, "visible")
+def _configure_visible(widget, value):
+    # Show / Hide widget
+    if value:
+        # Check which geometry manager is used by this widget. Default to 'pack'
+        geometry_manager = getattr(widget, '_geo', 'pack')
+        assert geometry_manager in ['pack', 'place', 'grid']
+        attrs = getattr(widget, '_geo_attrs', {})
+        getattr(widget, geometry_manager)(attrs)
+    else:
+        widget.forget()
+
+GEO_ATTRS = {
+    'pack': ('side', 'padx', 'pady', 'ipadx', 'ipady', 'fill', 'expand', 'anchor'),
+    'grid': ('column', 'columnspan', 'ipadx', 'ipady', 'padx', 'pady', 'row', 'rowspan', 'sticky'),
+    'place': ('x', 'y', 'relx', 'rely', 'anchor', 'width', 'height', 'relwidth', 'relheight', 'bordermode'),
+}
+for geo, keys in GEO_ATTRS.items():
+    for key in keys:
+
+        @attr(ttk.Widget, "%s-%s" % (geo, key))
+        def _configure_geo(widget, value, geo=geo, key=key):
+            # Check if another Geometry manager was used.
+            if getattr(widget, '_geo', geo) != geo:
+                raise ValueError('widget can only use a single geometry manager: %s' % geo)
+            widget._geo = geo
+            if getattr(widget, '_geo_attrs', None) is None:
+                widget._geo_attrs = {}
+            widget._geo_attrs[key] = value
+
+
+for cfg in ['columnconfigure', 'rowconfigure']:
+    for key in ['minsize', 'pad', 'weight']:
+
+        @attr(ttk.Widget, "%s-%s" % (cfg, key))
+        def _grid_configure(widget, value, cfg=cfg, key=key):
+            values = value.split(' ')
+            func = getattr(widget, cfg)
+            for idx, val in enumerate(values):
+                func(idx, **{key: val})
+
+
 @attr((tkinter.Tk, tkinter.Toplevel), "geometry")
 def _configure_geometry(widget, value):
     """
@@ -876,31 +936,11 @@ class Component:
         if "id" in attrs:
             assert not hasattr(self, attrs["id"]), 'widget id conflict with existing value'
             setattr(self, attrs["id"], widget)
-
-        # Check if args contains pack or :pack
-        # If the widget doesn't need to be pack. We don't need to compute changes.
-        if hasattr(widget, 'pack'):
-            geo = list(set([k.split('-')[0] for k in attrs.keys() if k.startswith("pack-") or k.startswith("place-")]))
-            if len(geo) > 1:
-                raise ValueError('widget can only use a single geometry manager: %s' % geo)
-            geo = geo[0] if geo else 'pack'
-            geo_attrs = {k.split('-')[1]: v for k, v in attrs.items() if k.startswith(geo + "-")}
-            if "visible" in attrs:
-                self._bind_attr(
-                    widget,
-                    attrs["visible"],
-                    lambda value, geo_attrs=geo_attrs, geo=geo: getattr(widget, geo)(geo_attrs)
-                    if value
-                    else widget.forget(),
-                    context,
-                )
-            else:
-                getattr(widget, geo)(geo_attrs)
+        #
+        # Process each attributes.
+        #
         for k, v in attrs.items():
-            if k in ["id", "command", "visible"] or k.startswith("pack-") or k.startswith("place-"):
-                # ignore pack attribute
-                continue
-            elif k in ["textvariable", "variable"]:
+            if k in ["textvariable", "variable"]:
                 self._dual_bind_attr(widget, v, k, context)
             else:
                 # Lookup attribute registry
@@ -911,10 +951,11 @@ class Component:
                     # Otherwise default to widget configure
                     func = functools.partial(_configure, widget, k)
                 self._bind_attr(widget, v, func, context)
-
+        # By default, show the widget.
+        if hasattr(widget, 'pack') and "visible" not in attrs:
+            _configure_visible(widget, True)
         return widget
 
-    # TODO Make this function static.
     def _walk(self, master, tree, context):
         assert tree
         assert context
