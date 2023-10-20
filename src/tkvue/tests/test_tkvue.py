@@ -323,6 +323,18 @@ class DialogWithLoop(tkvue.Component):
         super().__init__(master=master)
 
 
+class DialogWithCustomComponentLoop(tkvue.Component):
+    template = """
+    <TopLevel>
+        <CustomComponent for="item in items" />
+    </TopLevel>
+    """
+
+    def __init__(self, master=None):
+        self.data = tkvue.Context({"items": []})
+        super().__init__(master=master)
+
+
 class DialogWithScrolledFrame(tkvue.Component):
     template = """
     <TopLevel geometry="500x500">
@@ -604,6 +616,17 @@ class ComponentTest(unittest.TestCase):
             dlg.pump_events()
             # Then widget get created
             self.assertEqual(2, len(dlg.winfo_children()))
+
+    def test_loop_custom_component(self):
+        # Given a dial with loop
+        with new_dialog(DialogWithCustomComponentLoop) as dlg:
+            dlg.pump_events()
+            self.assertEqual(0, len(dlg.winfo_children()))
+            # When updating the items
+            dlg.data["items"] = [1, 2, 3, 4]
+            dlg.pump_events()
+            # Then widget get created
+            self.assertEqual(4, len(dlg.winfo_children()))
 
     def test_scrolled_frame(self):
         with new_dialog(DialogWithScrolledFrame) as dlg:
