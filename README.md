@@ -87,6 +87,22 @@ Other Tkinter-related projects worth mentioning:
 
 ## Changelog
 
+## 2.1.6 ()
+
+* Add support for `@tkvue.computed()` annotation to register attribute dynamically
+* Add support for Python 3.12
+* Ajust asyncio event loop to keep it running when mainloop() exit
+* Add support for Grid Geometry manager
+
+## 2.1.5 (2023-10-18)
+
+* Fix infinit recursion depth when root is not yet defined
+
+## 2.1.4 (2023-07-26)
+
+* Update background of ScrolledFrame when style is configure
+* Register "wrap" attribute only for Label
+
 ## 2.1.3 (2023-07-25)
 
 * Define minimum height for ScrolledFrame.

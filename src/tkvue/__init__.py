@@ -84,7 +84,7 @@ def computed(func):
             return len(context.names)
     """
     assert callable(func), 'tkvue.computed() required a function'
-    func.__computed__ = True
+    func.__tkvue_computed__ = True
     return func
 
 
@@ -216,7 +216,7 @@ class Context(collections.abc.MutableMapping):
             if key in m:
                 break
         value = m[key]
-        if hasattr(value, "__computed__"):
+        if hasattr(value, "__tkvue_computed__"):
             return value(self)
         else:
             if self._track is not None:
@@ -235,7 +235,7 @@ class Context(collections.abc.MutableMapping):
         # Get previous value for comparaison
         prev_value = self._map[key]
         # Raise an error if the key is a computed value. Those cannot be updated.
-        if hasattr(prev_value, "__computed__"):
+        if hasattr(prev_value, "__tkvue_computed__"):
             raise ValueError("cannot set computed attribute")
         # Save the new value.
         self._map[key] = value
@@ -286,7 +286,7 @@ class Context(collections.abc.MutableMapping):
         """
         assert expr
         assert func and hasattr(func, "__call__")
-        if expr in self._map and not hasattr(self._map[expr], "__computed__"):
+        if expr in self._map and not hasattr(self._map[expr], "__tkvue_computed__"):
             dependencies = set([expr])
             v = self.get(expr)
         else:
@@ -344,6 +344,74 @@ def _configure(widget, key, value):
     widget.configure(**{key: value})
 
 
+@attr(ttk.Widget, "id")
+def _configure_id_noop(widget, value):
+    """
+    No-op for `id` attribute already handle at creation of widget.
+    """
+    # Do nothing
+    pass
+
+
+@attr(ttk.Widget, "command")
+def _configure_command_noop(widget, value):
+    """
+    No-op for `command` attribute already handle at creation of widget.
+    """
+    # Do nothing
+    pass
+
+
+@attr(ttk.Widget, "visible")
+def _configure_visible(widget, value):
+    widget._tkvue_visible = value
+    # Do nothing if the widget is not yet registered.
+    if getattr(widget, '_tkvue_register', False):
+        # Show / Hide widget
+        if value:
+            # Check which geometry manager is used by this widget. Default to 'pack'
+            geo = getattr(widget, '_tkvue_geo', 'pack')
+            assert geo in ['pack', 'place', 'grid']
+            attrs = getattr(widget, '_tkvue_geo_attrs', {})
+            getattr(widget, geo)(attrs)
+        else:
+            widget.forget()
+
+
+GEO_ATTRS = {
+    'pack': ('side', 'padx', 'pady', 'ipadx', 'ipady', 'fill', 'expand', 'anchor'),
+    'grid': ('column', 'columnspan', 'ipadx', 'ipady', 'padx', 'pady', 'row', 'rowspan', 'sticky'),
+    'place': ('x', 'y', 'relx', 'rely', 'anchor', 'width', 'height', 'relwidth', 'relheight', 'bordermode'),
+}
+for geo, keys in GEO_ATTRS.items():
+    for key in keys:
+
+        @attr(ttk.Widget, "%s-%s" % (geo, key))
+        def _configure_geo(widget, value, geo=geo, key=key):
+            # Check if another Geometry manager was used.
+            if getattr(widget, '_tkvue_geo', geo) != geo:
+                raise ValueError('widget can only use a single geometry manager: %s' % geo)
+            # Store the vlaue within the widget metadata
+            widget._tkvue_geo = geo
+            if getattr(widget, '_tkvue_geo_attrs', None) is None:
+                widget._tkvue_geo_attrs = {}
+            widget._tkvue_geo_attrs[key] = value
+            # If registered, call the geometry manager
+            if getattr(widget, '_tkvue_register', False):
+                getattr(widget, geo)(widget._tkvue_geo_attrs)
+
+
+for cfg in ['columnconfigure', 'rowconfigure']:
+    for key in ['minsize', 'pad', 'weight']:
+
+        @attr(ttk.Widget, "%s-%s" % (cfg, key))
+        def _grid_configure(widget, value, cfg=cfg, key=key):
+            values = value.split(' ')
+            func = getattr(widget, cfg)
+            for idx, val in enumerate(values):
+                func(idx, **{key: val})
+
+
 @attr((tkinter.Tk, tkinter.Toplevel), "geometry")
 def _configure_geometry(widget, value):
     """
@@ -387,22 +455,22 @@ def _configure_image(widget, image_path):
         if widget.winfo_ismapped():
             widget.configure(image=widget.frames[widget.frame])
         # Register next animation.
-        widget._event_id = widget.after(150, _next_frame)
+        widget._tkvue_event_id = widget.after(150, _next_frame)
 
     def _stop_animation(unused=None):
-        if getattr(widget, "_func_id", None):
-            widget.unbind("<Destroy>", widget._func_id)
-            del widget._func_id
+        if getattr(widget, "_tkvue_func_id", None):
+            widget.unbind("<Destroy>", widget._tkvue_func_id)
+            del widget._tkvue_func_id
 
-        if getattr(widget, "_event_id", None):
-            widget.after_cancel(widget._event_id)
-            del widget._event_id
+        if getattr(widget, "_tkvue_event_id", None):
+            widget.after_cancel(widget._tkvue_event_id)
+            del widget._tkvue_event_id
 
     def _start_animation(unused=None):
-        if not getattr(widget, "_event_id", None):
-            widget._event_id = widget.after(100, _next_frame)
-        if not getattr(widget, "_func_id", None):
-            widget._func_id = widget.bind("<Destroy>", _stop_animation)
+        if not getattr(widget, "_tkvue_event_id", None):
+            widget._tkvue_event_id = widget.after(100, _next_frame)
+        if not getattr(widget, "_tkvue_func_id", None):
+            widget._tkvue_func_id = widget.bind("<Destroy>", _stop_animation)
 
     # Convert image _path to string (support PosixPath)
     image_path = str(image_path) if image_path else image_path
@@ -779,13 +847,13 @@ class Component:
         assert hasattr(self, "template"), "component %s must define a template" % self.__class__.__name__
         self.root = None
 
-        # Collect __computed__ functions
+        # Collect __tkvue_computed__ functions
         computed_data = {}
         computed_attrs = [
             key
             for key in dir(self)
             if callable(getattr(self, key))
-            if getattr(getattr(self, key), '__computed__', False)
+            if getattr(getattr(self, key), '__tkvue_computed__', False)
         ]
         for attr in computed_attrs:
             computed_data[attr] = getattr(self, attr)
@@ -804,7 +872,8 @@ class Component:
             parser.feed(self.template)
 
         # Generate the widget from template.
-        self.root = self._walk(master=master, tree=parser.tree, context=self.data)
+        # Make sure to skip registration as it should be done by caller.
+        self.root = self._walk(master=master, tree=parser.tree, context=self.data, skip_register=True)
 
         # Replace mainloop implementation for TopLevel
         if hasattr(self.root, 'mainloop'):
@@ -846,10 +915,9 @@ class Component:
         var.trace_add("write", lambda *args, var=var: context.set(expr, var.get()))
         widget.configure({attr: var})
 
-    def _bind_attrs(self, master, tag, attrs, context):
+    def _create_widget(self, master, tag, attrs, context, skip_register=False):
         """
         Resolve attributes values for the given widget.
-        Then apply them using configure() and pack()
         """
         assert tag
         assert attrs is not None
@@ -876,46 +944,30 @@ class Component:
         if "id" in attrs:
             assert not hasattr(self, attrs["id"]), 'widget id conflict with existing value'
             setattr(self, attrs["id"], widget)
-
-        # Check if args contains pack or :pack
-        # If the widget doesn't need to be pack. We don't need to compute changes.
-        if hasattr(widget, 'pack'):
-            geo = list(set([k.split('-')[0] for k in attrs.keys() if k.startswith("pack-") or k.startswith("place-")]))
-            if len(geo) > 1:
-                raise ValueError('widget can only use a single geometry manager: %s' % geo)
-            geo = geo[0] if geo else 'pack'
-            geo_attrs = {k.split('-')[1]: v for k, v in attrs.items() if k.startswith(geo + "-")}
-            if "visible" in attrs:
-                self._bind_attr(
-                    widget,
-                    attrs["visible"],
-                    lambda value, geo_attrs=geo_attrs, geo=geo: getattr(widget, geo)(geo_attrs)
-                    if value
-                    else widget.forget(),
-                    context,
-                )
-            else:
-                getattr(widget, geo)(geo_attrs)
+        #
+        # Process each attributes.
+        #
         for k, v in attrs.items():
-            if k in ["id", "command", "visible"] or k.startswith("pack-") or k.startswith("place-"):
-                # ignore pack attribute
-                continue
-            elif k in ["textvariable", "variable"]:
+            if k in ["textvariable", "variable"]:
                 self._dual_bind_attr(widget, v, k, context)
             else:
                 # Lookup attribute registry
-                func = [func for a, func in _attrs.items() if a[1] == k if isinstance(widget, a[0])]
+                real_widget = widget.root if isinstance(widget, Component) else widget
+                func = [func for a, func in _attrs.items() if a[1] == k if isinstance(real_widget, a[0])]
                 if func:
                     func = functools.partial(func[0], widget)
                 else:
                     # Otherwise default to widget configure
                     func = functools.partial(_configure, widget, k)
                 self._bind_attr(widget, v, func, context)
-
+        # By default, show the widget.
+        if hasattr(widget, 'pack') and not skip_register:
+            widget._tkvue_register = True
+            visible = getattr(widget, '_tkvue_visible', True)
+            _configure_visible(widget, visible)
         return widget
 
-    # TODO Make this function static.
-    def _walk(self, master, tree, context):
+    def _walk(self, master, tree, context, skip_register=False):
         assert tree
         assert context
         # Create widget to represent the node.
@@ -933,7 +985,7 @@ class Component:
             return None
         try:
             # Create the widget with required attributes.
-            widget = self._bind_attrs(master, tree.tag, attrs, context)
+            widget = self._create_widget(master, tree.tag, attrs, context, skip_register=skip_register)
         except Exception as e:
             raise TemplateError(
                 str(e)

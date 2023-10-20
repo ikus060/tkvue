@@ -26,7 +26,6 @@ except ImportError:
     import importlib.resources
 
     def resource_path(fn):
-
         with importlib.resources.files(__package__).joinpath(fn) as p:
             return str(p)
 
@@ -213,7 +212,7 @@ class DataTest(unittest.TestCase):
 
 class CustomComponent(tkvue.Component):
     template = """
-    <Frame pack-fill="x" pack-expand="1">
+    <Frame>
         <Label text="tet in component" />
     </Frame>
     """
@@ -377,6 +376,38 @@ class DialogWithTheme(tkvue.Component):
         super().__init__(master=master)
 
 
+class DialogWithPack(tkvue.Component):
+    template = """
+    <TopLevel>
+        <Button id="btn" text="Push button" pack-side="left" pack-padx="5" pack-pady="10" pack-ipadx="2" pack-ipady="2" pack-fill="x" pack-expand="y" pack-anchor="nw"/>
+        <CustomComponent pack-side="left" />
+    </TopLevel>
+    """
+
+
+class DialogWithPlace(tkvue.Component):
+    template = """
+    <TopLevel>
+        <Button id="btn" text="Push button" place-x="20" place-y="10" place-width="20" place-height="20"/>
+        <CustomComponent place-x="40" place-y="40" />
+    </TopLevel>
+    """
+
+
+class DialogWithGrid(tkvue.Component):
+    template = """
+    <TopLevel geometry="322x261">
+        <Frame pack-fill="both" pack-expand="1" columnconfigure-weight="1 1">
+            <Button id="btn1" text="grid-sticky=we" grid-column=0 grid-row=0 grid-sticky="we"/>
+            <Button id="btn2" text="b" grid-column=1 grid-row=0 />
+            <Button id="btn3" text="c" grid-column=0 grid-row=1 />
+            <Button id="btn4" text="d" grid-column=1 grid-row=1 />
+            <CustomComponent grid-column=0 grid-row=2 />
+        </Frame>
+    </TopLevel>
+    """
+
+
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
 class ComponentTest(unittest.TestCase):
     def test_open_close(self):
@@ -462,7 +493,6 @@ class ComponentTest(unittest.TestCase):
             # When selecting an item with radio
             dlg.three.invoke()
             dlg.pump_events()
-            # Then radio button get updated
             self.assertEqual(3, dlg.data.selected_number)
 
     @unittest.skipIf(IS_MAC, "this fail on MacOS when running in test suite")
@@ -657,3 +687,32 @@ class ComponentTest(unittest.TestCase):
             # Then the label get updated too.
             self.assertEqual(dlg.count1_label.cget('text'), 2)
             self.assertEqual(dlg.count1_label.cget('text'), 2)
+
+    @unittest.skipIf(IS_WINDOWS, "grid coordinate not working in CICD.")
+    def test_pack(self):
+        # Given a dialog with place-x attributes
+        with new_dialog(DialogWithPack) as dlg:
+            dlg.pump_events()
+            # Then dialog get displayed and button coordinate are fixed
+            self.assertEqual(5, dlg.btn.winfo_x())
+            self.assertEqual(10, dlg.btn.winfo_y())
+
+    def test_place(self):
+        # Given a dialog with place-x attributes
+        with new_dialog(DialogWithPlace) as dlg:
+            dlg.pump_events()
+            # Then dialog get displayed and button coordinate are fixed
+            self.assertEqual(20, dlg.btn.winfo_x())
+            self.assertEqual(10, dlg.btn.winfo_y())
+
+    @unittest.skipIf(IS_WINDOWS, "grid coordinate not working in CICD.")
+    def test_grid(self):
+        # Given a dialog with place-x attributes
+        with new_dialog(DialogWithGrid) as dlg:
+            dlg.pump_events()
+            # Then dialog get displayed and button coordinate are fixed
+            self.assertEqual(0, dlg.btn1.winfo_x())
+            self.assertEqual(0, dlg.btn1.winfo_y())
+            # Then dialog get displayed and button coordinate are variable
+            self.assertTrue(dlg.btn4.winfo_x() > 0)
+            self.assertTrue(dlg.btn4.winfo_y() > 0)
