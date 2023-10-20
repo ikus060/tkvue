@@ -965,7 +965,8 @@ class Component:
         return asyncio.get_event_loop()
 
     def _mainloop(self):
-        asyncio.run(self._async_mainloop())
+        loop = self.get_event_loop()
+        loop.run_until_complete(self._async_mainloop())
 
     async def _async_mainloop(self):
         '''
