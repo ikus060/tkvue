@@ -93,6 +93,7 @@ Other Tkinter-related projects worth mentioning:
 * Add support for Python 3.12
 * Ajust asyncio event loop to keep it running when mainloop() exit
 * Add support for Grid Geometry manager
+* Add support for `@tkvue.attr()` annotation to register attribute dynamically for custom component
 
 ## 2.1.5 (2023-10-18)
 

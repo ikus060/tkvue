@@ -213,9 +213,13 @@ class DataTest(unittest.TestCase):
 class CustomComponent(tkvue.Component):
     template = """
     <Frame>
-        <Label text="tet in component" />
+        <Label id="label" text="tet in component" />
     </Frame>
     """
+
+    @tkvue.attr('mytext')
+    def mytext(self, value):
+        self.label.configure(text=value)
 
 
 class Dialog(tkvue.Component):
@@ -416,6 +420,14 @@ class DialogWithGrid(tkvue.Component):
             <Button id="btn4" text="d" grid-column=1 grid-row=1 />
             <CustomComponent grid-column=0 grid-row=2 />
         </Frame>
+    </TopLevel>
+    """
+
+
+class DialogWithCustomAttr(tkvue.Component):
+    template = """
+    <TopLevel>
+        <CustomComponent id="mywidget" mytext="Foo" />
     </TopLevel>
     """
 
@@ -739,3 +751,10 @@ class ComponentTest(unittest.TestCase):
             # Then dialog get displayed and button coordinate are variable
             self.assertTrue(dlg.btn4.winfo_x() > 0)
             self.assertTrue(dlg.btn4.winfo_y() > 0)
+
+    def test_custom_attr(self):
+        # Given a dialog with a custom attribute
+        with new_dialog(DialogWithCustomAttr) as dlg:
+            dlg.pump_events()
+            # Then our custom attribute update the internal widget
+            self.assertEqual('Foo', dlg.mywidget.label.cget('text'))

@@ -34,17 +34,29 @@ _default_theme = None
 _default_theme_source = None
 
 
-def attr(widget_cls, attr_name):
+def attr(attr_name, widget_cls=None):
     """
     Function decorator to register an special attribute definition for a Widget.
+
+    @tkvue.attr('foo', ttk.Widget)
+    def foo(widget, value):
+        widget.some_call(value)
     """
 
     def decorate(f):
+        assert callable(f), '@tkvue.attr() required a callable function'
         if isinstance(widget_cls, (list, tuple)):
             for c in widget_cls:
                 _attrs[(c, attr_name)] = f
-        else:
+        elif widget_cls:
             _attrs[(widget_cls, attr_name)] = f
+        else:
+            # Most likely used @tkvue.attr on class method.
+            assert (
+                '.' in f.__qualname__
+            ), '@tkvue.attr(attr_name) can only be used on class method, otherwise you must define widget_cls explicitly.'
+            # The widget class cannot be retrieve at class initialization.
+            f.__tkvue_attr_name__ = attr_name
         return f
 
     return decorate
@@ -344,7 +356,7 @@ def _configure(widget, key, value):
     widget.configure(**{key: value})
 
 
-@attr(ttk.Widget, "id")
+@attr("id", ttk.Widget)
 def _configure_id_noop(widget, value):
     """
     No-op for `id` attribute already handle at creation of widget.
@@ -353,7 +365,7 @@ def _configure_id_noop(widget, value):
     pass
 
 
-@attr(ttk.Widget, "command")
+@attr("command", ttk.Widget)
 def _configure_command_noop(widget, value):
     """
     No-op for `command` attribute already handle at creation of widget.
@@ -362,7 +374,7 @@ def _configure_command_noop(widget, value):
     pass
 
 
-@attr(ttk.Widget, "visible")
+@attr("visible", ttk.Widget)
 def _configure_visible(widget, value):
     widget._tkvue_visible = value
     # Do nothing if the widget is not yet registered.
@@ -386,7 +398,7 @@ GEO_ATTRS = {
 for geo, keys in GEO_ATTRS.items():
     for key in keys:
 
-        @attr(ttk.Widget, "%s-%s" % (geo, key))
+        @attr("%s-%s" % (geo, key), ttk.Widget)
         def _configure_geo(widget, value, geo=geo, key=key):
             # Check if another Geometry manager was used.
             if getattr(widget, '_tkvue_geo', geo) != geo:
@@ -404,7 +416,7 @@ for geo, keys in GEO_ATTRS.items():
 for cfg in ['columnconfigure', 'rowconfigure']:
     for key in ['minsize', 'pad', 'weight']:
 
-        @attr(ttk.Widget, "%s-%s" % (cfg, key))
+        @attr("%s-%s" % (cfg, key), ttk.Widget)
         def _grid_configure(widget, value, cfg=cfg, key=key):
             values = value.split(' ')
             func = getattr(widget, cfg)
@@ -412,7 +424,7 @@ for cfg in ['columnconfigure', 'rowconfigure']:
                 func(idx, **{key: val})
 
 
-@attr((tkinter.Tk, tkinter.Toplevel), "geometry")
+@attr("geometry", (tkinter.Tk, tkinter.Toplevel))
 def _configure_geometry(widget, value):
     """
     Configure geometry on TopLevel
@@ -420,29 +432,29 @@ def _configure_geometry(widget, value):
     widget.geometry(value)
 
 
-@attr((tkinter.Tk, tkinter.Toplevel), "resizable")
+@attr("resizable", (tkinter.Tk, tkinter.Toplevel))
 def _configure_resizable(widget, value):
     assert isinstance(value, str), f"{value} should be a string value: <width> <height>"
     widget.resizable(*value.partition(' ')[0::2])
 
 
-@attr((tkinter.Tk, tkinter.Toplevel), "title")
+@attr("title", (tkinter.Tk, tkinter.Toplevel))
 def _configure_title(widget, value):
     assert isinstance(value, str), f"{value} should be a string"
     widget.title(gettext(value))
 
 
-@attr(ttk.Widget, "text")
+@attr("text", ttk.Widget)
 def _configure_text(widget, value):
     widget.configure(text=gettext(value))
 
 
-@attr((ttk.Button, ttk.Checkbutton), "selected")
+@attr("selected", (ttk.Button, ttk.Checkbutton))
 def _configure_selected(widget, value):
     widget.state(["selected" if value else "!selected", "!alternate"])
 
 
-@attr(ttk.Widget, "image")
+@attr("image", ttk.Widget)
 def _configure_image(widget, image_path):
     """
     Configure the image attribute of a Label or a Button.
@@ -508,7 +520,7 @@ def _configure_image(widget, image_path):
         _stop_animation()
 
 
-@attr(ttk.Label, "wrap")
+@attr("wrap", ttk.Label)
 def _configure_wrap(widget, wrap):
     # Support Text wrapping
     if wrap.lower() in ["true", "1"]:
@@ -519,7 +531,7 @@ def _configure_wrap(widget, wrap):
         )
 
 
-@attr(tkinter.Tk, "theme")
+@attr("theme", tkinter.Tk)
 def _configure_theme(widget, value):
     # Defined on TopLevel
     ttk.Style(master=widget).theme_use(value)
@@ -846,7 +858,13 @@ class Component:
 
     def __init_subclass__(cls, **kwargs):
         if cls not in _components:
+            # Register the component class
             _components[cls.__name__.lower()] = cls
+            # Register all attributes
+            for key in dir(cls):
+                member = getattr(cls, key)
+                if callable(member) and getattr(member, '__tkvue_attr_name__', False):
+                    _attrs[(cls, member.__tkvue_attr_name__)] = member
         super().__init_subclass__(**kwargs)
 
     def __init__(self, master=None):
@@ -960,7 +978,12 @@ class Component:
             else:
                 # Lookup attribute registry
                 real_widget = _real_widget(widget)
-                func = [func for a, func in _attrs.items() if a[1] == k if isinstance(real_widget, a[0])]
+                func = [
+                    func
+                    for a, func in _attrs.items()
+                    if a[1] == k
+                    if isinstance(widget, a[0]) or isinstance(real_widget, a[0])
+                ]
                 if func:
                     func = functools.partial(func[0], widget)
                 else:
