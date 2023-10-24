@@ -152,8 +152,9 @@ def create_toplevel(master=None):
         if root != event.widget:
             return
         # Update TopLevel background according to TTK Style.
-        bg = ttk.Style(master=root).lookup("TFrame", "background")
-        root.configure(bg=bg)
+        style_name = getattr(root, '__tkvue_style__')
+        bg = ttk.Style(master=root).lookup(style_name, "background")
+        root.configure(background=bg)
 
     root.bind("<<ThemeChanged>>", _update_bg)
 
@@ -452,6 +453,14 @@ def _configure_text(widget, value):
 @attr("selected", (ttk.Button, ttk.Checkbutton))
 def _configure_selected(widget, value):
     widget.state(["selected" if value else "!selected", "!alternate"])
+
+
+@attr("style", (tkinter.Tk, tkinter.Toplevel))
+def _configure_toplevel_style(widget, style_name):
+    # Update TopLevel background according to TTK Style.
+    bg = ttk.Style(master=widget).lookup(style_name, "background")
+    widget.configure(background=bg)
+    widget.__tkvue_style__ = style_name
 
 
 @attr("image", ttk.Widget)
@@ -786,6 +795,9 @@ class ScrolledFrame(ttk.Frame):
         self.canvas.unbind_all("<MouseWheel>")  # On Windows
 
     def _update_bg(self, event):
+        """
+        Propagate the style of parent widget to canvas and interior widget.
+        """
         style_name = self.cget('style') or 'TFrame'
         bg = ttk.Style(master=self.master).lookup(style_name, "background")
         self.canvas.configure(bg=bg)
@@ -857,6 +869,9 @@ class Component:
     template = """<Label text="default template" />"""
 
     def __init_subclass__(cls, **kwargs):
+        """
+        When creating subclass of component, we need to register the component and it's cusotm attributes.
+        """
         if cls not in _components:
             # Register the component class
             _components[cls.__name__.lower()] = cls

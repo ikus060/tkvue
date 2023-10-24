@@ -432,6 +432,14 @@ class DialogWithCustomAttr(tkvue.Component):
     """
 
 
+class DialogWithStyle(tkvue.Component):
+    template = """
+    <TopLevel style="default.TFrame">
+        <Label text="test" />
+    </TopLevel>
+    """
+
+
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
 class ComponentTest(unittest.TestCase):
     def test_open_close(self):
@@ -758,3 +766,15 @@ class ComponentTest(unittest.TestCase):
             dlg.pump_events()
             # Then our custom attribute update the internal widget
             self.assertEqual('Foo', dlg.mywidget.label.cget('text'))
+
+    def test_toplevel_style(self):
+        # Given a dialog with a custom style.
+        with new_dialog(DialogWithStyle) as dlg:
+            dlg.pump_events()
+            self.assertNotEqual('#ffffff', dlg.root.cget('background'))
+            # When updating the style
+            s = ttk.Style(master=dlg.root)
+            s.configure('default.TFrame', background='#ffffff')
+            dlg.pump_events()
+            # Then the TopLevel background get updated.
+            self.assertEqual('#ffffff', dlg.root.cget('background'))
