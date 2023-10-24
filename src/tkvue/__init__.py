@@ -692,7 +692,10 @@ class Loop:
         self.update_items(items)
 
     def create_widget(self, idx):
-        child_var = {self.loop_target: computed(lambda context: context.eval(self.loop_items)[idx])}
+        child_var = {
+            self.loop_target: computed(lambda context: context.eval(self.loop_items)[idx]),
+            'loop_idx': idx,
+        }
         child_context = self.context.new_child(**child_var)
         return self.widget_factory(master=self.master, tree=self.tree, context=child_context)
 

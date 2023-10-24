@@ -440,6 +440,17 @@ class DialogWithStyle(tkvue.Component):
     """
 
 
+class DialogWithLoopInLoop(tkvue.Component):
+    template = """
+    <TopLevel style="default.TFrame">
+        <LabelFrame for="item in items" text="{{ '%s / %s' % (loop_idx, len(item)) }}">
+            <Label for="char in item" text="{{ '%s: %s' % (loop_idx, char) }}" pack-padx="5"/>
+        </LabelFrame>
+    </TopLevel>
+    """
+    data = tkvue.Context({"items": []})
+
+
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
 class ComponentTest(unittest.TestCase):
     def test_open_close(self):
@@ -778,3 +789,14 @@ class ComponentTest(unittest.TestCase):
             dlg.pump_events()
             # Then the TopLevel background get updated.
             self.assertEqual('#ffffff', dlg.root.cget('background'))
+
+    def test_loop_in_loop(self):
+        # Given a dialog with loops
+        with new_dialog(DialogWithLoopInLoop) as dlg:
+            # When updating the items
+            dlg.data["items"] = ["patrik", "michel"]
+            dlg.pump_events()
+            # Then the widget get created
+            self.assertEqual(2, len(dlg.winfo_children()))
+            self.assertEqual(6, len(dlg.winfo_children()[0].winfo_children()))
+            self.assertEqual(6, len(dlg.winfo_children()[1].winfo_children()))
