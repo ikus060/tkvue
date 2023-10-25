@@ -89,11 +89,13 @@ Other Tkinter-related projects worth mentioning:
 
 ## 2.1.6 ()
 
-* Add support for `@tkvue.computed()` annotation to register attribute dynamically
-* Add support for Python 3.12
+* Add support `@tkvue.computed()` annotation to register attribute dynamically
+* Add support Python 3.12
 * Ajust asyncio event loop to keep it running when mainloop() exit
-* Add support for Grid Geometry manager
-* Add support for `@tkvue.attr()` annotation to register attribute dynamically for custom component
+* Add support Grid Geometry manager
+* Add support `@tkvue.attr()` annotation to register attribute dynamically for custom component
+* Add support `style` attribute on `TopLevel` to inherit background color
+* Add `loop_idx` variable when using `for` attribute
 
 ## 2.1.5 (2023-10-18)
 

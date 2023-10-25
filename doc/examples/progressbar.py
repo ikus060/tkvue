@@ -36,12 +36,12 @@ class RootDialog(tkvue.Component):
 
     def __init__(self, master=None):
         super().__init__(master)
-        self.root.after(1, lambda: asyncio.get_running_loop().create_task(self._update()))
+        self.root.after(1, lambda: self.loop.create_task(self._update()))
 
     async def _update(self):
         while self.root.winfo_exists():
             self.data['progress'] = (self.data['progress'] + 1) % 100
-            # Sleep 500ms
+            # Sleep 50ms
             await asyncio.sleep(0.05)
 
 

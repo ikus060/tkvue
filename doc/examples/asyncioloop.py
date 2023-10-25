@@ -60,7 +60,7 @@ class RootDialog(tkvue.Component):
         self.root.after(3000, self._check_latest_version)
 
     def _check_latest_version(self):
-        asyncio.get_running_loop().create_task(self._check_latest_version_task())
+        self.loop.create_task(self._check_latest_version_task())
 
     async def _check_latest_version_task(self):
         self.data['checking_for_update'] = True

@@ -19,6 +19,9 @@ except ImportError:
         return message
 
 
+# When this module is loaded. Make sure default Tkinter doesn't get created.
+tkinter.NoDefaultRoot()
+
 logger = logging.getLogger(__name__)
 
 
@@ -920,6 +923,7 @@ class Component:
 
         # Replace mainloop implementation for TopLevel
         if hasattr(self.root, 'mainloop'):
+            self.loop = asyncio.get_event_loop_policy().get_event_loop()
             self.mainloop = self._mainloop
 
     def _bind_attr(self, widget, value, func, context):
@@ -1062,27 +1066,16 @@ class Component:
         """
         Return the asyncio event loop to be used by component subclass to execute asynchronous operation.
         """
-        return asyncio.get_event_loop()
+        return self.loop
 
     def _mainloop(self):
-        loop = self.get_event_loop()
-        loop.run_until_complete(self._async_mainloop())
+        self.root.after(1, self.__update_asyncio)
+        self.root.mainloop()
 
-    async def _async_mainloop(self):
-        '''
-        An asynchronous implementation of tkinter mainloop to cooperate with asyncio.
-
-        This coroutine runs a complete iteration of the tkinter event loop for a
-        root. It yields in between each individual event, which prevents it from
-        blocking the asyncio event loop. It runs until there are no more events in
-        the queue, then returns, allowing the caller to do other tasks or sleep
-        afterwards. This keeps CPU load low.
-        '''
-        while True:
-            try:
-                self.root.winfo_exists()  # Throw TclError if the main Windows is destroyed
-                while self.root.dooneevent(tkinter._tkinter.DONT_WAIT):
-                    await asyncio.sleep(0)
-            except tkinter.TclError:
-                break
-            await asyncio.sleep(0.01)
+    def __update_asyncio(self):
+        """
+        This function run a complete iteration of asyncio.
+        """
+        self.loop.call_soon(self.loop.stop)
+        self.loop.run_forever()
+        self.after(50, self.__update_asyncio)
