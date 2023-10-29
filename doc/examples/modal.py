@@ -64,19 +64,6 @@ class ModalDialog(tkvue.Component):
         # Close this windows
         self.root.destroy()
 
-    def modal(self):
-        """
-        Following tkinter documentation to make a TopLevel windows Modal.
-        https://tkdocs.com/tutorial/windows.html#dialogs
-        """
-        self.root.protocol("WM_DELETE_WINDOW", self.cancel_event)  # intercept close button
-        if self.root.master:
-            self.root.transient(self.root.master)  # dialog window is related to main
-            self.root.tk.eval('tk::PlaceWindow %s widget %s' % (self.root, self.root.master))
-        self.root.wait_visibility()  # can't grab until window appears, so we wait
-        self.root.grab_set()  # ensure all input goes to our window
-        self.root.wait_window()  # block until window is destroyed
-
 
 class RootDialog(tkvue.Component):
     template = """

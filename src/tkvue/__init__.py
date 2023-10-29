@@ -925,6 +925,7 @@ class Component:
         if hasattr(self.root, 'mainloop'):
             self.loop = asyncio.get_event_loop_policy().get_event_loop()
             self.mainloop = self._mainloop
+            self.modal = self._modal
 
     def _bind_attr(self, widget, value, func, context):
         if value.startswith("{{") and value.endswith("}}"):
@@ -1079,3 +1080,25 @@ class Component:
         self.loop.call_soon(self.loop.stop)
         self.loop.run_forever()
         self.after(50, self.__update_asyncio)
+
+    def _modal(self):
+        """
+        Following tkinter documentation to make a TopLevel windows Modal.
+        https://tkdocs.com/tutorial/windows.html#dialogs
+        """
+        self.root.protocol("WM_DELETE_WINDOW", self.destroy)  # intercept close button
+
+        # Dialog boxes should be transient with respect to their parent,
+        # so that they will always stay on top of their parent window.  However,
+        # some window managers will create the window as withdrawn if the parent
+        # window is withdrawn or iconified.  Combined with the grab we put on the
+        # window, this can hang the entire application.  Therefore we only make
+        # the dialog transient if the parent is viewable.
+        if self.root.master:
+            toplevel = self.root.master.winfo_toplevel()
+            if toplevel.winfo_viewable():
+                self.root.transient(toplevel)  # dialog window is related to main
+                self.root.tk.eval('tk::PlaceWindow %s widget %s' % (self.root, toplevel))
+        self.root.wait_visibility()  # can't grab until window appears, so we wait
+        self.root.grab_set()  # ensure all input goes to our window
+        self.root.wait_window()
