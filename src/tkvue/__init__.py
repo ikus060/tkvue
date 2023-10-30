@@ -82,9 +82,10 @@ def widget(widget_name):
 #
 for a in dir(ttk):
     cls = getattr(ttk, a)
-    if type(cls) == type and issubclass(cls, ttk.Widget):
+    if isinstance(cls, type) and issubclass(cls, tkinter.Widget):
         _widgets[a.lower()] = cls
-
+# Register Canvas
+_widgets['canvas'] = tkinter.Canvas
 
 def computed(func):
     """
@@ -360,7 +361,7 @@ def _configure(widget, key, value):
     widget.configure(**{key: value})
 
 
-@attr("id", ttk.Widget)
+@attr("id", tkinter.Widget)
 def _configure_id_noop(widget, value):
     """
     No-op for `id` attribute already handle at creation of widget.
@@ -369,7 +370,7 @@ def _configure_id_noop(widget, value):
     pass
 
 
-@attr("command", ttk.Widget)
+@attr("command", tkinter.Widget)
 def _configure_command_noop(widget, value):
     """
     No-op for `command` attribute already handle at creation of widget.
@@ -378,7 +379,7 @@ def _configure_command_noop(widget, value):
     pass
 
 
-@attr("visible", ttk.Widget)
+@attr("visible", tkinter.Widget)
 def _configure_visible(widget, value):
     widget._tkvue_visible = value
     # Do nothing if the widget is not yet registered.
@@ -402,7 +403,7 @@ GEO_ATTRS = {
 for geo, keys in GEO_ATTRS.items():
     for key in keys:
 
-        @attr("%s-%s" % (geo, key), ttk.Widget)
+        @attr("%s-%s" % (geo, key), tkinter.Widget)
         def _configure_geo(widget, value, geo=geo, key=key):
             # Check if another Geometry manager was used.
             if getattr(widget, '_tkvue_geo', geo) != geo:
@@ -420,7 +421,7 @@ for geo, keys in GEO_ATTRS.items():
 for cfg in ['columnconfigure', 'rowconfigure']:
     for key in ['minsize', 'pad', 'weight']:
 
-        @attr("%s-%s" % (cfg, key), ttk.Widget)
+        @attr("%s-%s" % (cfg, key), tkinter.Widget)
         def _grid_configure(widget, value, cfg=cfg, key=key):
             values = value.split(' ')
             func = getattr(widget, cfg)
@@ -448,7 +449,7 @@ def _configure_title(widget, value):
     widget.title(gettext(value))
 
 
-@attr("text", ttk.Widget)
+@attr("text", tkinter.Widget)
 def _configure_text(widget, value):
     widget.configure(text=gettext(value))
 
