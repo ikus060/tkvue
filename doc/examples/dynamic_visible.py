@@ -20,12 +20,16 @@ class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue Test">
     <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Checkbutton text="Show Text" variable="{{show}}" />
-        <Label text="Text is Visible" visible="{{show}}" />
+        <Checkbutton text="Show Text using 'pack' geometry" variable="{{show_pack}}" />
+        <Label text="Text is Visible" visible="{{show_pack}}" />
+    </Frame>
+    <Frame pack-fill="both" pack-expand="true" padding="10">
+        <Checkbutton text="Show Text using 'grid' geometry" variable="{{show_grid}}" grid-column="0" grid-row="0"/>
+        <Label text="Text is Visible" visible="{{show_grid}}" grid-column="0" grid-row="1"/>
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({'show': True})
+    data = tkvue.Context({'show_pack': True, 'show_grid':True})
 
 
 if __name__ == "__main__":

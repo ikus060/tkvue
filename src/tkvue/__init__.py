@@ -385,14 +385,15 @@ def _configure_visible(widget, value):
     # Do nothing if the widget is not yet registered.
     if getattr(widget, '_tkvue_register', False):
         # Show / Hide widget
+        geo = getattr(widget, '_tkvue_geo', 'pack')
+        assert geo in ['pack', 'place', 'grid']
         if value:
             # Check which geometry manager is used by this widget. Default to 'pack'
-            geo = getattr(widget, '_tkvue_geo', 'pack')
-            assert geo in ['pack', 'place', 'grid']
             attrs = getattr(widget, '_tkvue_geo_attrs', {})
             getattr(widget, geo)(attrs)
         else:
-            widget.forget()
+            forget_func = getattr(widget, '%s_forget' % geo)
+            forget_func()
 
 
 GEO_ATTRS = {
