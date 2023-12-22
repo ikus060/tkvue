@@ -30,6 +30,7 @@ except ImportError:
             return str(p)
 
 
+import calendar
 import os
 import sys
 import tkinter
@@ -62,152 +63,106 @@ def new_dialog(cls):
 
 
 class DataTest(unittest.TestCase):
-    def setUp(self):
-        self.last_value = None
-        return super().setUp()
-
-    def callback(self, value):
-        self.last_value = value
-
     def test_get_set_variable(self):
-        data = tkvue.Context({"var1": "foo"})
-        data.var1 = "bar"
-        self.assertEqual(data.var1, "bar")
-        data.set("var1", "rat")
-        self.assertEqual(data.var1, "rat")
+        var1 = tkvue.state("foo")
+        var1.value = "bar"
+        self.assertEqual(var1.value, "bar")
 
     def test_get_computed(self):
-        data = tkvue.Context(
-            {
-                "var1": 1,
-                "var2": 2,
-                "sum": tkvue.computed(lambda store: store.var1 + store.var2),
-            }
-        )
-        self.assertEqual(data.sum, 3)
+        var1 = tkvue.state(1)
+        var2 = tkvue.state(2)
+        sum = tkvue.computed_property(lambda: var1.value + var2.value)
+        self.assertEqual(sum.value, 3)
 
     def test_watch_with_variable(self):
-        data = tkvue.Context({"var1": "foo"})
-        data.watch("var1", self.callback)
-        data.var1 = "bar"
-        self.assertEqual(self.last_value, "bar")
+        listener = []
+        var1 = tkvue.state("foo")
+        var1.subscribe(listener.append)
+        var1.value = "bar"
+        self.assertEqual(listener, ["bar"])
 
     def test_watch_with_computed(self):
-        data = tkvue.Context(
-            {
-                "var1": 1,
-                "var2": 2,
-                "sum": tkvue.computed(lambda store: store.var1 + store.var2),
-            }
-        )
-        data.watch("sum", self.callback)
-        data.var1 = 4
-        self.assertEqual(self.last_value, 6)
-
-    def test_watch_list(self):
-        data = tkvue.Context(
-            {"var1": [1, 2, 3, 4]},
-        )
-        data.watch("var1", self.callback)
-        data.var1 = [1, 2, 3]
-        self.assertEqual(self.last_value, [1, 2, 3])
+        listener = []
+        var1 = tkvue.state(1)
+        var2 = tkvue.state(1)
+        sum = tkvue.computed_property(lambda: var1.value + var2.value)
+        self.assertEqual(2, sum.value)
+        sum.subscribe(listener.append)
+        var1.value = 4
+        self.assertEqual(listener, [5])
 
     def test_unwatch(self):
-        data = tkvue.Context(
-            {"var1": "foo"},
-        )
-        data.watch("var1", self.callback)
-        data.var1 = "bar"
-        self.assertEqual(self.last_value, "bar")
-        data.unwatch("var1", self.callback)
-        data.var1 = "foo"
-        self.assertEqual(self.last_value, "bar")
+        listener = []
+        var1 = tkvue.state("foo")
+        var1.subscribe(listener.append)
+        var1.value = "bar"
+        self.assertEqual(listener, ["bar"])
+        var1.unsubscribe(listener.append)
+        var1.value = "foo"
+        self.assertEqual(listener, ["bar"])
 
     def test_eval(self):
-        data = tkvue.Context(
-            {"var1": [1, 2, 3, 4]},
-        )
-        self.assertEqual(2, data.eval("var1[1]"))
-
-    def test_watch_list_item(self):
-        data = tkvue.Context(
-            {"var1": [1, 2, 3, 4]},
-        )
-        data.watch("var1[1]", self.callback)
-        data.var1 = [1, 2, 3]
-        self.assertEqual(self.last_value, 2)
+        context = tkvue._Context({"var1": tkvue.state([1, 2, 3, 4])})
+        self.assertEqual(2, eval("var1[1]", None, context))
 
     def test_new_child(self):
-        data = tkvue.Context(
-            {"var1": [1, 2, 3, 4]},
-        )
-        data2 = data.new_child(item=tkvue.computed(lambda self: self.var1[3]))
-        # Item doesn't exists in data
-        with self.assertRaises(KeyError):
-            data.item
+        var1 = tkvue.state([1, 2, 3, 4])
+        item = tkvue.computed_property(lambda: var1.value[3])
+        parent = tkvue._Context({'var1': var1})
+        child = tkvue._Context({'item': item}, parent=parent)
         # Item is equals to var[3] in data2
-        self.assertEqual(data2.item, 4)
-        # Call to function also work.
-        data2.eval("callback(item)", callback=self.callback)
-        self.assertEqual(self.last_value, 4)
-
-    def test_new_child_watch(self):
-        # Given a parent context with a list
-        data = tkvue.Context(
-            {"var1": [1, 2, 3, 4]},
-        )
-        # Given a child context with computed value on parent
-        child = data.new_child(item=tkvue.computed(lambda self: self.var1[1]))
-        self.assertEqual(child.item, 2)
-        # Given a watcher on computed value
-        child.watch("item", self.callback)
-        # When updating the parent
-        data.var1 = [2, 3, 4]
-        # Then the watcher get called.
-        self.assertEqual(self.last_value, 3)
-
-    def test_new_child_unwatch(self):
-        # Given a parent context
-        data = tkvue.Context(
-            {"var1": "foo"},
-        )
-        # Given a child context with computed value on parent
-        child = data.new_child(item=tkvue.computed(lambda self: self.var1 + "bar"))
-        self.assertEqual(child.item, "foobar")
-        # Given a watcher on computed value
-        child.watch("item", self.callback)
-        data.var1 = "bar"
-        self.assertEqual(self.last_value, "barbar")
-        # When removing watcher
-        child.unwatch("item", self.callback)
-        # Then updating the parent doesn't notify anymore
-        data.var1 = "rat"
-        self.assertEqual(self.last_value, "barbar")
+        self.assertEqual(item.value, 4)
+        self.assertEqual(child['item'], 4)
 
     def test_setter_child(self):
         # Given a parent context
-        data = tkvue.Context(
-            {"var1": "foo"},
-        )
-        # Given a child context
-        child = data.new_child()
+        var1 = tkvue.state("foo")
+        context = tkvue._Context({'var1': var1})
         # When setting a value on the child context.
-        child.var1 = "bar"
+        context['var1'] = "bar"
         # Then the value is update into the parent context.
-        self.assertEqual(data.var1, "bar")
+        self.assertEqual(var1.value, "bar")
 
     def test_computed_dependencies_updated(self):
-        # Given a parent context
-        data = tkvue.Context(
-            {"var1": True, "var2": True},
-        )
-        # Given a watching on both variables.
-        data.watch("var1 or var2", self.callback)
+        listener = []
+        var1 = tkvue.state(True)
+        var2 = tkvue.state(True)
+        valid = tkvue.computed_property(lambda: var1.value or var2.value)
+        valid.subscribe(listener.append)
         # When setting a value on the child context.
-        data.var1 = False
-        data.var2 = False
+        var1.value = False
+        var2.value = False
         # Then the value is update into the parent context.
-        self.assertEqual(self.last_value, False)
+        self.assertEqual(listener, [True, False])
+
+    def test_computed_parent(self):
+        # Given multiple parent-child context
+        c = calendar.Calendar(calendar.SUNDAY)
+        year = tkvue.state(2023)
+        month = tkvue.state(12)
+        days = tkvue.computed_property(lambda c=c: list(c.itermonthdays3(year.value, month.value)))
+        parent = tkvue._Context({'year': year, 'month': month, 'days': days})
+        child_idx0 = tkvue._Context(
+            {'d': tkvue.computed_property(lambda: eval('days', None, parent)[0])}, parent=parent
+        )
+        child_idx1 = tkvue._Context(
+            {'d': tkvue.computed_property(lambda: eval('days', None, parent)[1])}, parent=parent
+        )
+        self.assertEqual((2023, 11, 26), child_idx0['d'])
+        self.assertEqual((2023, 11, 27), child_idx1['d'])
+        # When updating the year and month.
+        month.value = 11
+        # Then child value get updated.
+        self.assertEqual((2023, 10, 29), child_idx0['d'])
+        self.assertEqual((2023, 10, 30), child_idx1['d'])
+        # When watching index of value
+        listener = []
+        computed = tkvue.computed_property(lambda: eval('d[2]', None, child_idx0))
+        computed.subscribe(listener.append)
+        # When updating the month again
+        month.value = 10
+        # The listener should be called
+        self.assertEqual([1], listener)
 
 
 class CustomComponent(tkvue.Component):
@@ -237,7 +192,6 @@ class Dialog(tkvue.Component):
             <Label for="i in names" text="{{i}}" />
         </Frame>
         <label id="count1_label" text="{{count1}}" />
-        <label id="count2_label" text="{{count2}}" />
         <Frame pack-fill="x" pack-expand="1">
             <Radiobutton id="blue" variable="{{selected_color}}" value="blue" text="blue"/>
             <Radiobutton id="red" variable="{{selected_color}}" value="red" text="red"/>
@@ -251,36 +205,30 @@ class Dialog(tkvue.Component):
         </Frame>
         <Frame pack-fill="x" pack-expand="1">
             <Checkbutton id="checkbutton" text="foo" selected="{{checkbutton_selected}}" command="checkbutton_invoke"/>
-            <Checkbutton id="checkbutton2" text="foo" variable="{{checkbutton_selected}}"/>
-            <Checkbutton id="checkbutton3" text="foo" selected="{{checkbutton_selected}}" command="funcation_call_with_args('arg1')"/>
+            <Checkbutton id="checkbutton2" text="leader" variable="{{checkbutton_selected}}"/>
+            <Checkbutton id="checkbutton3" text="follower" selected="{{checkbutton_selected}}" command="funcation_call_with_args('arg1')"/>
         </Frame>
         <CustomComponent></CustomComponent>
     </TopLevel>
     """
+    text_value = tkvue.state("foo")
+    button_visible = tkvue.state(True)
+    names = tkvue.state(["patrik", "annik", "michel", "denise"])
+    selected_color = tkvue.state("blue")
+    selected_number = tkvue.state(1)
+    checkbutton_selected = tkvue.state(True)
 
-    def __init__(self, master=None):
-        self.data = tkvue.Context(
-            {
-                "text_value": "foo",
-                "button_visible": True,
-                "names": ["patrik", "annik", "michel", "denise"],
-                "selected_color": "blue",
-                "selected_number": 1,
-                "checkbutton_selected": True,
-                "count1": tkvue.computed(lambda x: len(x.names)),
-            }
-        )
-        super().__init__(master=master)
+    @tkvue.computed_property
+    def count1(self):
+        return len(self.names.value)
 
+    @tkvue.command
     def checkbutton_invoke(self):
-        self.data.checkbutton_selected = not self.data.checkbutton_selected
+        self.checkbutton_selected.value = not self.checkbutton_selected.value
 
+    @tkvue.command
     def funcation_call_with_args(self, value):
         self.value = value
-
-    @tkvue.computed
-    def count2(self, context):
-        return len(context.names)
 
 
 class DialogWithImage(tkvue.Component):
@@ -290,10 +238,7 @@ class DialogWithImage(tkvue.Component):
         <Label id="label" text="Label with image" image="{{image_path}}" compound="left"/>
     </TopLevel>
     """
-
-    def __init__(self, master=None):
-        self.data = tkvue.Context({"image_path": None})
-        super().__init__(master=master)
+    image_path = tkvue.state(None)
 
 
 class DialogWithTextWrap(tkvue.Component):
@@ -321,10 +266,7 @@ class DialogWithLoop(tkvue.Component):
         <Label text="{{item}}" for="item in items"/>
     </TopLevel>
     """
-
-    def __init__(self, master=None):
-        self.data = tkvue.Context({"items": []})
-        super().__init__(master=master)
+    items = tkvue.state([])
 
 
 class DialogWithCustomComponentLoop(tkvue.Component):
@@ -333,10 +275,7 @@ class DialogWithCustomComponentLoop(tkvue.Component):
         <CustomComponent for="item in items" />
     </TopLevel>
     """
-
-    def __init__(self, master=None):
-        self.data = tkvue.Context({"items": []})
-        super().__init__(master=master)
+    items = tkvue.state([])
 
 
 class DialogWithScrolledFrame(tkvue.Component):
@@ -386,10 +325,7 @@ class DialogWithTheme(tkvue.Component):
         <Button text="Push button" />
     </TopLevel>
     """
-
-    def __init__(self, master=None):
-        self.data = tkvue.Context({"theme_value": 'alt'})
-        super().__init__(master=master)
+    theme_value = tkvue.state("alt")
 
 
 class DialogWithPack(tkvue.Component):
@@ -448,7 +384,7 @@ class DialogWithLoopInLoop(tkvue.Component):
         </LabelFrame>
     </TopLevel>
     """
-    data = tkvue.Context({"items": []})
+    items = tkvue.state([])
 
 
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
@@ -471,7 +407,7 @@ class ComponentTest(unittest.TestCase):
             dlg.pump_events()
             self.assertEqual("foo", dlg.label.cget("text"))
             # When updating the value of the context
-            dlg.data.text_value = "bar"
+            dlg.text_value.value = "bar"
             # Then the widget get updated
             self.assertEqual("bar", dlg.label.cget("text"))
 
@@ -492,7 +428,7 @@ class ComponentTest(unittest.TestCase):
             dlg.entry.event_generate("<i>")
             dlg.pump_events()
             # Then the store get updated
-            self.assertEqual("ifoo", dlg.data.text_value)
+            self.assertEqual("ifoo", dlg.text_value.value)
             self.assertEqual("ifoo", dlg.label.cget("text"))
             self.assertEqual("ifoo", dlg.entry.getvar(dlg.entry.cget("text")))
 
@@ -503,7 +439,7 @@ class ComponentTest(unittest.TestCase):
             dlg.pump_events()
             self.assertTrue(dlg.button.winfo_ismapped())
             # When typing into the entry field
-            dlg.data.button_visible = False
+            dlg.button_visible.value = False
             dlg.pump_events()
             # Then the store get updated
             self.assertFalse(dlg.button.winfo_ismapped())
@@ -514,7 +450,7 @@ class ComponentTest(unittest.TestCase):
             dlg.pump_events()
             self.assertEqual(4, len(dlg.people.winfo_children()))
             # When Adding element to the list
-            dlg.data.names = ["patrik", "annik"]
+            dlg.names.value = ["patrik", "annik"]
             dlg.pump_events()
             # Then the dialog get updated
             self.assertEqual(2, len(dlg.people.winfo_children()))
@@ -527,7 +463,7 @@ class ComponentTest(unittest.TestCase):
             dlg.red.invoke()
             dlg.pump_events()
             # Then radio button get updated
-            self.assertEqual("red", dlg.data.selected_color)
+            self.assertEqual("red", dlg.selected_color.value)
 
     def test_dual_binding_select_number(self):
         # Given a dialog with a for loop
@@ -536,28 +472,34 @@ class ComponentTest(unittest.TestCase):
             # When selecting an item with radio
             dlg.three.invoke()
             dlg.pump_events()
-            self.assertEqual(3, dlg.data.selected_number)
+            self.assertEqual(3, dlg.selected_number.value)
 
     @unittest.skipIf(IS_MAC, "this fail on MacOS when running in test suite")
     def test_checkbutton_selected(self):
         # Given a dialog with checkbutton binded with `selected` attribute
         with new_dialog(Dialog) as dlg:
             dlg.pump_events()
-            self.assertEqual(dlg.checkbutton.state(), ("selected",))
+            # Due to bug in TTK, when we assign command, the state switch to 'alternate'
+            self.assertEqual(dlg.checkbutton.state(), ("selected", "alternate"))
             self.assertEqual(dlg.checkbutton2.state(), ("selected",))
             # When updating checkbutton_selected value
-            dlg.data.checkbutton_selected = False
+            dlg.checkbutton_selected.value = False
             dlg.pump_events()
             # Then the widget get updated
             self.assertEqual(dlg.checkbutton.state(), tuple())
             self.assertEqual(dlg.checkbutton2.state(), tuple())
+            # When updating checkbutton_selected value
+            dlg.checkbutton_selected.value = True
+            dlg.pump_events()
+            # Then the widget get updated
+            self.assertEqual(dlg.checkbutton.state(), ("selected",))
+            self.assertEqual(dlg.checkbutton2.state(), ("selected",))
 
     @unittest.skipIf(IS_MAC, "this fail on MacOS when running in test suite")
     def test_checkbutton_selected_command(self):
         # Given a dialog with checkbutton binded with `selected` attribute
         with new_dialog(Dialog) as dlg:
             dlg.pump_events()
-            self.assertEqual(dlg.checkbutton.state(), ("selected",))
             self.assertEqual(dlg.checkbutton2.state(), ("selected",))
             # When cliking on checkbutton
             dlg.checkbutton.focus_set()
@@ -565,7 +507,7 @@ class ComponentTest(unittest.TestCase):
             dlg.root.focus_set()
             dlg.pump_events()
             # Then the widget status get toggled.
-            self.assertEqual(dlg.data.checkbutton_selected, False)
+            self.assertEqual(dlg.checkbutton_selected.value, False)
             self.assertEqual(dlg.checkbutton.state(), tuple())
             self.assertEqual(dlg.checkbutton2.state(), tuple())
             # When cliking on checkbutton again
@@ -574,7 +516,7 @@ class ComponentTest(unittest.TestCase):
             dlg.root.focus_set()
             dlg.pump_events()
             # Then the widget status get toggled.
-            self.assertEqual(dlg.data.checkbutton_selected, True)
+            self.assertEqual(dlg.checkbutton_selected.value, True)
             self.assertEqual(dlg.checkbutton.state(), ("selected",))
             self.assertEqual(dlg.checkbutton2.state(), ("selected",))
 
@@ -584,7 +526,7 @@ class ComponentTest(unittest.TestCase):
             self.assertEqual("", dlg.button.cget("image"))
             self.assertEqual("", dlg.label.cget("image"))
             # When settings image_path
-            dlg.data["image_path"] = resource_path("python_icon.png")
+            dlg.image_path.value = resource_path("python_icon.png")
             # Then Button and Label get update with an image
             self.assertTrue(dlg.button.cget("image")[0].startswith("pyimage"))
             self.assertTrue(dlg.label.cget("image")[0].startswith("pyimage"))
@@ -595,12 +537,12 @@ class ComponentTest(unittest.TestCase):
             self.assertEqual("", dlg.button.cget("image"))
             self.assertEqual("", dlg.label.cget("image"))
             # When settings image_path
-            dlg.data["image_path"] = resource_path("preloader.gif")
+            dlg.image_path.value = resource_path("preloader.gif")
             # Then Button and Label get update with an image
             self.assertTrue(dlg.button.cget("image")[0].startswith("pyimage"))
             self.assertTrue(dlg.label.cget("image")[0].startswith("pyimage"))
             # Then set image to None
-            dlg.data["image_path"] = ''
+            dlg.image_path.value = ''
 
     @unittest.skipIf(IS_WINDOWS, "Not working on Windows CICD")
     def test_text_wrap(self):
@@ -631,7 +573,7 @@ class ComponentTest(unittest.TestCase):
             dlg.pump_events()
             self.assertEqual(0, len(dlg.winfo_children()))
             # When updating the items
-            dlg.data["items"] = [1, 2, 3, 4]
+            dlg.items.value = [1, 2, 3, 4]
             dlg.pump_events()
             # Then widget get created
             self.assertEqual(4, len(dlg.winfo_children()))
@@ -639,11 +581,11 @@ class ComponentTest(unittest.TestCase):
     def test_loop_removing_items(self):
         # Given a dial with loop
         with new_dialog(DialogWithLoop) as dlg:
-            dlg.data["items"] = [1, 2, 3, 4]
+            dlg.items.value = [1, 2, 3, 4]
             dlg.pump_events()
             self.assertEqual(4, len(dlg.winfo_children()))
             # When removing items
-            dlg.data["items"] = [3, 4]
+            dlg.items.value = [3, 4]
             dlg.pump_events()
             # Then widget get created
             self.assertEqual(2, len(dlg.winfo_children()))
@@ -654,7 +596,7 @@ class ComponentTest(unittest.TestCase):
             dlg.pump_events()
             self.assertEqual(0, len(dlg.winfo_children()))
             # When updating the items
-            dlg.data["items"] = [1, 2, 3, 4]
+            dlg.items.value = [1, 2, 3, 4]
             dlg.pump_events()
             # Then widget get created
             self.assertEqual(4, len(dlg.winfo_children()))
@@ -725,7 +667,7 @@ class ComponentTest(unittest.TestCase):
             # Then TopLevel get created with specific theme
             self.assertEqual('alt', ttk.Style(dlg.root).theme_use())
             # When updating the theme value
-            dlg.data['theme_value'] = 'clam'
+            dlg.theme_value.value = 'clam'
             # Then theme get updated
             self.assertEqual('clam', ttk.Style(dlg.root).theme_use())
 
@@ -737,7 +679,7 @@ class ComponentTest(unittest.TestCase):
             self.assertEqual(dlg.count1_label.cget('text'), 4)
             self.assertEqual(dlg.count1_label.cget('text'), 4)
             # When uding the names
-            dlg.data.names = ["patrik", "annik"]
+            dlg.names.value = ["patrik", "annik"]
             dlg.pump_events()
             # Then the label get updated too.
             self.assertEqual(dlg.count1_label.cget('text'), 2)
@@ -795,7 +737,7 @@ class ComponentTest(unittest.TestCase):
         # Given a dialog with loops
         with new_dialog(DialogWithLoopInLoop) as dlg:
             # When updating the items
-            dlg.data["items"] = ["patrik", "michel"]
+            dlg.items.value = ["patrik", "michel"]
             dlg.pump_events()
             # Then the widget get created
             self.assertEqual(2, len(dlg.winfo_children()))

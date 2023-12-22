@@ -2,13 +2,13 @@
 # IKUS Software inc. PROPRIETARY/CONFIDENTIAL.
 # Use is subject to license terms.
 import asyncio
-import collections
+import contextlib
 import functools
 import logging
 import os
+import threading
 import tkinter
 from html.parser import HTMLParser
-from itertools import chain
 from tkinter import ttk
 
 try:
@@ -19,15 +19,52 @@ except ImportError:
         return message
 
 
+EMPTY_GLOBALS = {}
+
+
+def _eval_func(expr, context):
+    """
+    Create a function to execute eval() within the given context
+    """
+    assert isinstance(expr, str), 'expect an expression'
+    return functools.partial(eval, expr, EMPTY_GLOBALS, context)
+
+
+# Local data for watcher tracking.
+local = threading.local()
+local.tracking = []
+
 # When this module is loaded. Make sure default Tkinter doesn't get created.
 tkinter.NoDefaultRoot()
 
-logger = logging.getLogger(__name__)
+# Default logger.
+logger = logging.getLogger('tkvue')
 
+# Component registry
+_components = {}
 
-_components = {}  # Component registry.
-_widgets = {}  # Widget registry
-_attrs = {}  # Attribute registry
+# Widget registry
+_widgets = {}
+
+# Attribute registry
+_attrs = {}
+
+# Register all ttk widget
+for a in dir(ttk):
+    cls = getattr(ttk, a)
+    if isinstance(cls, type) and issubclass(cls, tkinter.Widget):
+        _widgets[a.lower()] = cls
+
+# Register Canvas
+_widgets['canvas'] = tkinter.Canvas
+
+# Map python types to tkinter variable class.
+_VARTYPES = {
+    int: tkinter.IntVar,
+    float: tkinter.DoubleVar,
+    bool: tkinter.BooleanVar,
+    str: tkinter.StringVar,
+}
 
 _default_basename = None
 _default_classname = "Tkvue"
@@ -35,15 +72,45 @@ _default_screenname = None
 _default_icons = None
 _default_theme = None
 _default_theme_source = None
+_default_theme_callback = None
+
+
+def _computed_expression(expr, context):
+    """
+    Return an observable object for the given expression.
+    """
+    assert isinstance(expr, str), 'expect an expression'
+    # Lookup exact expression in context.
+    # If observable, return it directly
+    try:
+        obj = context.get(expr.strip())
+        if _is_observable(obj):
+            return obj
+    except KeyError:
+        pass
+    # Otherwise, create an observable using eval
+    return computed_property(_eval_func(expr, context))
 
 
 def attr(attr_name, widget_cls=None):
     """
     Function decorator to register an special attribute definition for a Widget.
 
+    ```
     @tkvue.attr('foo', ttk.Widget)
     def foo(widget, value):
         widget.some_call(value)
+    ```
+
+    Could also be used with component:
+
+    ```
+    class MyWidget(tkvue.component):
+
+        @tkvue.attr('foo')
+        def foo(widget, value):
+            widget.some_call(value)
+    ```
     """
 
     def decorate(f):
@@ -77,32 +144,156 @@ def widget(widget_name):
     return decorate
 
 
-#
-# Register all ttk widget
-#
-for a in dir(ttk):
-    cls = getattr(ttk, a)
-    if isinstance(cls, type) and issubclass(cls, tkinter.Widget):
-        _widgets[a.lower()] = cls
-# Register Canvas
-_widgets['canvas'] = tkinter.Canvas
-
-
-def computed(func):
+def _is_observable(obj):
     """
-    Create computed attributes.
+    Return true if the object is observable with subscribe() and also return a value
+    """
+    return obj is not None and hasattr(obj, 'subscribe') and hasattr(obj, 'value')
 
-    This could be used as annotation on Component's function
+
+class Observable:
+    def accessed(self):
+        """Should be called when the observable get accessed"""
+        for obj in local.tracking:
+            self.subscribe(obj._dependency_change)
+            obj._dependencies.append(self)
+
+    def subscribe(self, func):
+        """Adding subscriber on the current state."""
+        assert callable(func), 'subscriber must be callable: %s' % func
+        if not getattr(self, '_subscribers', False):
+            self._subscribers = []
+        self._subscribers.append(func)
+
+    def unsubscribe(self, func):
+        """Removing associated subscribers."""
+        if getattr(self, '_subscribers', False):
+            self._subscribers.remove(func)
+
+    def _notify(self, new_value):
+        if getattr(self, '_subscribers', False):
+            for func in list(self._subscribers):
+                try:
+                    func(new_value)
+                except Exception:
+                    logger.exception("exception when notifying subscriber: %s" % func)
+
+    @contextlib.contextmanager
+    def track_dependencies(self):
+        """
+        Used to enable tracking of dependencies.
+        """
+        assert callable(
+            getattr(self, '_dependency_change', False)
+        ), 'implemmentation of _dependency_change() is required to enable tracking'
+        # Clear previous dependencies
+        if getattr(self, '_dependencies', False):
+            for d in list(self._dependencies):
+                d.unsubscribe(self._dependency_change)
+        self._dependencies = []
+        # Enable tracking
+        local.tracking.append(self)
+        try:
+            yield self
+        finally:
+            # Disable tracking
+            local.tracking.remove(self)
+
+
+class computed_property(Observable):
+    """
+    Class decorator
+    """
+
+    __tkvue_expose__ = True
+
+    def __init__(self, func) -> None:
+        assert callable(func), 'computed_property required a function'
+        self._func = func
+
+    def __set_name__(self, owner, name):
+        self._name = name
+
+    def __get__(self, instance, owner):
+        func = functools.partial(self._func, instance)
+        return_instance = computed_property(func)
+        instance.__dict__[self._name] = return_instance
+        return return_instance
+
+    def subscribe(self, func):
+        super().subscribe(func)
+        # If dirty, we need to compute the value to register dependencies
+        if getattr(self, '_dirty', True):
+            self.value
+
+    @property
+    def value(self):
+        # Return cached value if available
+        if not getattr(self, '_dirty', True):
+            self.accessed()
+            return self._value
+        # Compute new value
+        with self.track_dependencies():
+            return_value = self._func()
+        self._dirty = False
+        self._value = return_value
+        return return_value
+
+    def _dependency_change(self, unused_new_value):
+        """When our dependencies get updated, make our self dirty and notify our watchers."""
+        self._dirty = True
+        # Compute new value and notify subscribers
+        if getattr(self, '_subscribers', False):
+            new_value = self.value
+            self._notify(new_value)
+
+
+class state(Observable):
+    """
+    Create a state().
+    """
+
+    __tkvue_expose__ = True
+
+    def __init__(self, initial_value) -> None:
+        assert hasattr(initial_value, "__hash__"), "unhashable type '%s'" % type(initial_value)
+        self._value = initial_value
+
+    def __set_name__(self, owner, name):
+        self._name = name
+
+    def __get__(self, instance, owner):
+        return_instance = state(self._value)
+        instance.__dict__[self._name] = return_instance
+        return return_instance
+
+    @property
+    def value(self):
+        self.accessed()
+        # TODO We may need to wrap list and dict.
+        return self._value
+
+    @value.setter
+    def value(self, new_value):
+        assert hasattr(new_value, "__hash__"), "unhashable type '%s'" % type(new_value)
+        old_value = self._value
+        self._value = new_value
+        if old_value != new_value:
+            self._notify(new_value)
+
+
+def command(obj):
+    """
+    Expose the class function to the context. This should be used as annotation on Component's function.
 
     class MyComponent(tkvue.Component):
-
-        @tkvue.computed()
-        def count(self, context):
-            return len(context.names)
+        @tkvue.command()
+        def on_click(self):
+            print("button click")
     """
-    assert callable(func), 'tkvue.computed() required a function'
-    func.__tkvue_computed__ = True
-    return func
+    assert callable(obj), 'tkvue.command() required a function'
+    obj.__tkvue_expose__ = True
+    return obj
 
 
 def configure_tk(
@@ -112,48 +303,58 @@ def configure_tk(
     icon=[],
     theme=None,
     theme_source=None,
+    theme_callback=None,
 ):
     """
     Use to configure default instance of Tkinter created by tkvue.
+
+    basename: Text displayed in Dock
+    classname: Text displayed in Dock
+    screenname: unknown
+    icon: list of default icon associated with the application
+    theme: name of theme to load
+    theme_source: optional tcl script to be loaded
+    theme_callback: a function to further customize the theme
     """
     assert theme_source is None or os.path.isfile(theme_source)
 
     # Disable Tkinter default root creation
     tkinter.NoDefaultRoot()
-    global _default_basename, _default_classname, _default_screenname, _default_icons, _default_theme, _default_theme_source
+    global _default_basename, _default_classname, _default_screenname, _default_icons, _default_theme, _default_theme_source, _default_theme_callback
     _default_basename = basename
     _default_classname = classname
     _default_screenname = screenname
     _default_icons = icon
     _default_theme = theme
     _default_theme_source = theme_source
+    _default_theme_callback = theme_callback
 
 
 @widget('toplevel')
 def create_toplevel(master=None):
-    """
-    Used to create a TopLevel window.
-    """
+    """Used to create a TopLevel window."""
 
-    global _default_basename, _default_classname, _default_screenname, _default_icons, _default_theme, _default_theme_source
+    global _default_basename, _default_classname, _default_screenname, _default_icons, _default_theme, _default_theme_source, _default_theme_callback
     if master is None:
         root = tkinter.Tk(
             baseName=_default_basename,
             className=_default_classname,
             screenName=_default_screenname,
         )
-        root.report_callback_exception = lambda exc, val, tb: logger.exception("Exception in Tkinter callback")
+        root.report_callback_exception = lambda exc, val, tb: logger.exception("exception in Tkinter callback")
         if _default_theme_source:
             root.call("source", _default_theme_source)
         if _default_theme:
             root.call("ttk::setTheme", _default_theme)
+        if _default_theme_callback:
+            _default_theme_callback(root)
         if _default_icons:
             root.iconphoto(True, *_default_icons)
     else:
         root = tkinter.Toplevel(master)
 
     def _update_bg(event):
-        # Skip update if event is not related to TopLevel widget.
+        # Skip update if event is not raised for TopLevel widget.
         if root != event.widget:
             return
         # Update TopLevel background according to TTK Style.
@@ -198,163 +399,63 @@ def extract_tkvue(fileobj, keywords, comment_tags, options):
         yield entry
 
 
-class Context(collections.abc.MutableMapping):
+class _Context:
     def __init__(self, initial_data={}, parent=None):
-        "Create a new root context"
-        for key, value in initial_data.items():
-            assert hasattr(value, "__hash__"), "unhashable type '%s' for key %s" % (
-                type(value),
-                key,
-            )
+        """Create a new root context"""
+        # Make sure only callable and Observable are included.
+        for key, obj in initial_data.items():
+            if not callable(obj) and not _is_observable(obj):
+                raise ValueError(
+                    'context only support observable objects state() and computed_property(): %s = %s' % (key, obj)
+                )
         self._map = initial_data.copy()
         self._parent = parent
-        self._maps = [self._map]
-        self._track = None
-        self._watchers = {}
-        if self._parent is not None:
-            self._maps += self._parent._maps
-
-    def new_child(self, **kwargs):
-        "Make a child context, inheriting enable_nonlocal unless specified"
-        return self.__class__(kwargs, parent=self)
-
-    def __getattr__(self, key):
-        return self[key]
-
-    def __setattr__(self, key, value):
-        if key.startswith("_"):
-            super().__setattr__(key, value)
-        else:
-            self[key] = value
-
-    set = __setattr__
 
     def __getitem__(self, key):
-        for m in self._maps:
-            if key in m:
-                break
-        value = m[key]
-        if hasattr(value, "__tkvue_computed__"):
-            return value(self)
-        else:
-            if self._track is not None:
-                self._track.append(key)
-            return value
+        """Used by `eval()` to resolve variable name. Unwrap the value."""
+        if key not in self._map and self._parent:
+            return self._parent.__getitem__(key)
+        obj = self._map[key]
+        if callable(obj):
+            return obj
+        return obj.value
 
     def __setitem__(self, key, value):
-        assert hasattr(value, "__hash__"), "unhashable type '%s' for key %s" % (
-            type(value),
-            key,
-        )
+        """Used by eval() to set variable value"""
         # Dispatch setter to parent context
         if key not in self._map and self._parent:
             self._parent.__setitem__(key, value)
             return
         # Get previous value for comparaison
-        prev_value = self._map[key]
-        # Raise an error if the key is a computed value. Those cannot be updated.
-        if hasattr(prev_value, "__tkvue_computed__"):
+        obj = self._map[key]
+        if not hasattr(obj, "value"):
             raise ValueError("cannot set computed attribute")
-        # Save the new value.
-        self._map[key] = value
-        # If value changed, notify
-        if prev_value != value:
-            self._notify(key, value)
+        obj.value = value
 
-    def __delitem__(self, key):
-        del self._map[key]
-
-    def __len__(self):
-        return sum(map(len, self._maps))
-
-    def __iter__(self, chain_from_iterable=chain.from_iterable):
-        return chain_from_iterable(self._maps)
-
-    def __contains__(self, key, any=any):
-        return any(key in m for m in self._maps)
-
-    def __repr__(self, repr=repr):
-        return " -> ".join(map(repr, self._maps))
-
-    def _notify(self, key, new):
-        # Notify watchers.
-        items = list(self._watchers.items())
-        for (expr, func), (dependencies, context) in items:
-            # Check if dependencies matches our key
-            # Also check if the watcher is still in the list since
-            # the list may get updated during notification.
-            if key in dependencies and (expr, func) in self._watchers:
-                func(context.watch(expr, func))
-
-    def eval(self, expr, **kwargs):
-        """
-        Evaluate the given expression.
-        """
-        if kwargs:
-            return self.new_child(**kwargs).eval(expr)
-        else:
-            try:
-                return eval(expr, None, self)
-            except Exception as e:
-                raise Exception("exception occured while evaluating expression `%s`" % expr) from e
-
-    def watch(self, expr, func):
-        """
-        Adding watcher on the given expression.
-        """
-        assert expr
-        assert func and hasattr(func, "__call__")
-        if expr in self._map and not hasattr(self._map[expr], "__tkvue_computed__"):
-            dependencies = set([expr])
-            v = self.get(expr)
-        else:
-            self._track = []
-            v = self.eval(expr)
-            dependencies = set(self._track)
-            self._track = None
-        # Register watchers on appropriate context depending where variable is declared
-        context = self
-        while context:
-            dep = [d for d in dependencies if d in context._map]
-            if dep:
-                context._watchers[(expr, func)] = (dep, self)
-            context = context._parent
-        return v
-
-    def unwatch(self, expr, func):
-        """
-        Removing associated watchers.
-        """
-        context = self
-        while context:
-            if (expr, func) in context._watchers:
-                del context._watchers[(expr, func)]
-            context = context._parent
-
-    def __bool__(self):
-        return True
+    def get(self, key):
+        """Return the real object"""
+        if key not in self._map and self._parent:
+            return self._parent.__getitem__(key)
+        return self._map[key]
 
 
-def _create_command(component, value, context):
+def _create_command(expr, context):
     """
     Command may only be define when creating widget.
     So let process this attribute before creating the widget.
     """
-    if value.startswith("{{"):
-        raise ValueError("cannot use binding ({{) in `command` attribute: " + value)
-    available_functions = {k: getattr(component, k) for k in dir(component) if callable(getattr(component, k))}
+    if expr.startswith("{{"):
+        raise ValueError("cannot use binding ({{) in `command` attribute: " + expr)
     # May need to adjust this to detect expression.
-    if "(" in value or "=" in value:
-
-        def func():
-            return context.eval(value, **available_functions)
-
+    if "(" in expr or "=" in expr:
+        func = _eval_func(expr, context)
     else:
-        func = available_functions.get(value, None)
-        if func is None or not hasattr(func, "__call__"):
-            raise ValueError(
-                '`command` attribute must define a function to be called `function_name(arg1, arg2)`: ' + value
-            )
+        try:
+            func = context.get(expr)
+            if func is None or not callable(func):
+                raise ValueError('`command` attribute must define a function name or a function call: ' + expr)
+        except KeyError:
+            raise ValueError('cannot find function name for `command` attribute: ' + expr)
     return func
 
 
@@ -364,20 +465,15 @@ def _configure(widget, key, value):
 
 @attr("id", tkinter.Widget)
 def _configure_id_noop(widget, value):
-    """
-    No-op for `id` attribute already handle at creation of widget.
-    """
-    # Do nothing
+    """No-op for `id` attribute already handle at creation of widget."""
     pass
 
 
 @attr("command", tkinter.Widget)
-def _configure_command_noop(widget, value):
-    """
-    No-op for `command` attribute already handle at creation of widget.
-    """
-    # Do nothing
-    pass
+def _configure_command(widget, value):
+    """Assign function to command"""
+    assert value is None or callable(value), "expect a callable function for command"
+    widget.configure(command=value)
 
 
 @attr("visible", tkinter.Widget)
@@ -425,6 +521,7 @@ for cfg in ['columnconfigure', 'rowconfigure']:
 
         @attr("%s-%s" % (cfg, key), tkinter.Widget)
         def _grid_configure(widget, value, cfg=cfg, key=key):
+            assert ',' not in value, "values must be separated by spaces, not by comma (,)"
             values = value.split(' ')
             func = getattr(widget, cfg)
             for idx, val in enumerate(values):
@@ -473,7 +570,6 @@ def _configure_toplevel_style(widget, style_name):
 def _configure_image(widget, image_path):
     """
     Configure the image attribute of a Label or a Button.
-
     Support animated gif image.
     """
 
@@ -482,7 +578,7 @@ def _configure_image(widget, image_path):
         if widget.winfo_ismapped():
             widget.configure(image=widget.frames[widget.frame])
         # Register next animation.
-        widget._tkvue_event_id = widget.after(150, _next_frame)
+        widget._tkvue_event_id = widget.tk.call('after', 100, next_frame_command_name)
 
     def _stop_animation(unused=None):
         if getattr(widget, "_tkvue_func_id", None):
@@ -495,10 +591,12 @@ def _configure_image(widget, image_path):
 
     def _start_animation(unused=None):
         if not getattr(widget, "_tkvue_event_id", None):
-            widget._tkvue_event_id = widget.after(100, _next_frame)
+            widget._tkvue_event_id = widget.tk.call('after', 100, next_frame_command_name)
         if not getattr(widget, "_tkvue_func_id", None):
             widget._tkvue_func_id = widget.bind("<Destroy>", _stop_animation)
 
+    # Manually register the function to avoid creating-deleting commands.
+    next_frame_command_name = widget._register(_next_frame)
     # Convert image _path to string (support PosixPath)
     image_path = str(image_path) if image_path else image_path
     # Create a new image
@@ -691,27 +789,33 @@ class Loop:
         self.widgets = []
         # Validate expression by evaluating it.
         self.loop_target, unused, self.loop_items = for_expr.partition(" in ")
-        items = context.eval(self.loop_items)
         # Register our self
-        context.watch(self.loop_items, self.update_items)
+        obj = _computed_expression(self.loop_items, context)
+        obj.subscribe(self.update_items)
+        # When our parent is destroyed, stop watching
+        self.master.bind("<Destroy>", lambda event, obj=obj: obj.unsubscribe(self.update_items), add="+")
         # Children shildren
-        self.update_items(items)
+        self.update_items(obj.value)
 
     def create_widget(self, idx):
-        child_var = {
-            self.loop_target: computed(lambda context: context.eval(self.loop_items)[idx]),
-            'loop_idx': idx,
-        }
-        child_context = self.context.new_child(**child_var)
+        child_context = _Context(
+            {
+                self.loop_target: computed_property(_eval_func("%s[%s]" % (self.loop_items, idx), self.context)),
+                'loop_idx': state(idx),
+            },
+            parent=self.context,
+        )
         return self.widget_factory(master=self.master, tree=self.tree, context=child_context)
 
     def update_items(self, items):
+        assert hasattr(items, '__len__'), "for loop doesn't support type %s, make sure `%s` return a list()" % (
+            type(items),
+            self.loop_items,
+        )
         # We may need to create new widgets.
         while self.idx < len(items):
             widget = self.create_widget(self.idx)
             # Make sure to pack widget at the right location.
-            # TODO Fix parent when all item get deleteds
-            widget.pack(after=_real_widget(self.widgets[-1]) if self.widgets else None)
             self.widgets.append(widget)
             self.idx += 1
         # We may need to delete widgets
@@ -884,11 +988,6 @@ class Component:
         if cls not in _components:
             # Register the component class
             _components[cls.__name__.lower()] = cls
-            # Register all attributes
-            for key in dir(cls):
-                member = getattr(cls, key)
-                if callable(member) and getattr(member, '__tkvue_attr_name__', False):
-                    _attrs[(cls, member.__tkvue_attr_name__)] = member
         super().__init_subclass__(**kwargs)
 
     def __init__(self, master=None):
@@ -896,22 +995,16 @@ class Component:
         assert hasattr(self, "template"), "component %s must define a template" % self.__class__.__name__
         self.root = None
 
-        # Collect __tkvue_computed__ functions
-        computed_data = {}
-        computed_attrs = [
-            key
-            for key in dir(self)
-            if callable(getattr(self, key))
-            if getattr(getattr(self, key), '__tkvue_computed__', False)
-        ]
-        for attr in computed_attrs:
-            computed_data[attr] = getattr(self, attr)
+        # Collect __tkvue_expose__ members (function or properties)
+        initial_data = {}
+        for key in dir(self):
+            value = getattr(self, key)
+            if getattr(value, '__tkvue_expose__', False):
+                # Get bound method or property
+                initial_data[key] = value
 
         # Initialize a Context used to store the state.
-        if not hasattr(self, "data"):
-            self.data = Context(initial_data=computed_data)
-        else:
-            self.data = Context(initial_data=computed_data, parent=self.data)
+        self._context = _Context(initial_data=initial_data)
 
         # Read the template
         parser = Parser()
@@ -922,7 +1015,7 @@ class Component:
 
         # Generate the widget from template.
         # Make sure to skip registration as it should be done by caller.
-        self.root = self._walk(master=master, tree=parser.tree, context=self.data, skip_register=True)
+        self.root = self._walk(master=master, tree=parser.tree, context=self._context, skip_register=True)
 
         # Replace mainloop implementation for TopLevel
         if hasattr(self.root, 'mainloop'):
@@ -930,41 +1023,87 @@ class Component:
             self.mainloop = self._mainloop
             self.modal = self._modal
 
-    def _bind_attr(self, widget, value, func, context):
+    def _find_attr(self, widget, attr_name):
+        """
+        Lookup attribute registry for the proper setter function.
+        """
+        # Lookup @attr() declared on class
+        if isinstance(widget, Component):
+            for key in dir(widget):
+                member = getattr(widget, key)
+                if callable(member) and getattr(member, '__tkvue_attr_name__', False) == attr_name:
+                    return member
+
+        # Lookup attribute registry
+        real_widget = _real_widget(widget)
+        func = [
+            func
+            for a, func in _attrs.items()
+            if a[1] == attr_name
+            if isinstance(widget, a[0]) or isinstance(real_widget, a[0])
+        ]
+        if func:
+            return functools.partial(func[0], widget)
+        else:
+            # Otherwise default to widget configure
+            return functools.partial(_configure, widget, attr_name)
+
+    def _bind_attr(self, widget, attr_name, value, context):
+        """
+        This function is called for each attributes mapping. Either for dual-binding (textvariable, variable) for dynamic binding with "{{ expr }}".
+
+        attribute name with "variable" and "command" are treated differently to accomodate tkinter behavior.
+
+        """
+        real_widget = _real_widget(widget)
+        # Find the setter function for tthis attribute using the registry.
+        setter = self._find_attr(widget, attr_name)
         if value.startswith("{{") and value.endswith("}}"):
-            expr = value[2:-2]
+            # Truncate curly braquet {{ }}
+            value = value[2:-2].strip()
+            # Create an observable from the expression
+            obj = _computed_expression(value, context)
+            # Check if dual data binding should be put in place.
+            dual = attr_name.endswith('variable')
+            command = attr_name.endswith('command')
+            # Evaluate expression a first time to get the variable type.
+            if dual:
+                # Resolve value first, to raise any exception.
+                initial_value = obj.value
+                # Make sure the observable is not readonly.
+                assert getattr(
+                    type(obj).value, 'fset', False
+                ), f'{attr_name} attribute only support dual binding and required a state(). computed_property() or expression are not supported: f{value}'
+                # Create a Tkinter variable to bind with.
+                VarClass = _VARTYPES.get(type(initial_value), tkinter.StringVar)
+                var = VarClass(master=real_widget, value=initial_value)
+                # Whenever the variable get updated, update the context
+                var.trace_add("write", lambda *args, var=var: setattr(obj, 'value', var.get()))
+                # The update function will update the variable value.
+                update_func = var.set
+            else:
+                # The update function is the setter it-self.
+                update_func = setter
             # Register observer
-            expr_value = context.watch(expr, func)
+            obj.subscribe(update_func)
             # Assign the value
-            func(expr_value)
+            if dual:
+                setter(var)
+            else:
+                setter(obj.value)
             # Handle disposal
             widget.bind(
                 "<Destroy>",
-                lambda event, expr=expr, func=func: context.unwatch(expr, func),
+                lambda event, obj=obj, update_func=update_func: obj.unsubscribe(update_func),
                 add="+",
             )
+        elif attr_name.endswith('command'):
+            # Wrap the command value as a function
+            command = _create_command(value, context)
+            setter(command)
         else:
             # Plain value with evaluation.
-            func(value)
-
-    def _dual_bind_attr(self, widget, value, attr, context):
-        assert value.startswith("{{") and value.endswith("}}")
-        expr = value[2:-2].strip()
-        # Get current variable type.
-        # And create appropriate variable type.
-        var_type = type(context.eval(expr))
-        if var_type == int:
-            var = tkinter.IntVar(master=widget)
-        elif var_type == float:
-            var = tkinter.DoubleVar(master=widget)
-        elif var_type == bool:
-            var = tkinter.BooleanVar(master=widget)
-        else:
-            var = tkinter.StringVar(master=widget)
-        # Support dual-databinding
-        self._bind_attr(widget, value, lambda new_value, var=var: var.set(new_value), context)
-        var.trace_add("write", lambda *args, var=var: context.set(expr, var.get()))
-        widget.configure({attr: var})
+            setter(value)
 
     def _create_widget(self, master, tag, attrs, context, skip_register=False):
         """
@@ -981,13 +1120,16 @@ class Component:
 
         # The "command" attribute must be pass during widget construction.
         kwargs = {}
-        if "command" in attrs:
-            kwargs["command"] = _create_command(self, attrs["command"], context)
+        # if "command" in attrs:
+        #    kwargs["command"] = _create_command(self, attrs["command"], context)
 
         #
         # Create widget.
         #
         widget = widget_cls(master=master, **kwargs)
+        assert not isinstance(widget, Component) or getattr(
+            widget, 'root'
+        ), 'Component not initialized properly. Did you forget to call `super().__init__(master)` is your custom component ?'
 
         #
         # Assign widget to variables.
@@ -998,24 +1140,8 @@ class Component:
         #
         # Process each attributes.
         #
-        for k, v in attrs.items():
-            if k in ["textvariable", "variable"]:
-                self._dual_bind_attr(widget, v, k, context)
-            else:
-                # Lookup attribute registry
-                real_widget = _real_widget(widget)
-                func = [
-                    func
-                    for a, func in _attrs.items()
-                    if a[1] == k
-                    if isinstance(widget, a[0]) or isinstance(real_widget, a[0])
-                ]
-                if func:
-                    func = functools.partial(func[0], widget)
-                else:
-                    # Otherwise default to widget configure
-                    func = functools.partial(_configure, widget, k)
-                self._bind_attr(widget, v, func, context)
+        for attr_name, value in attrs.items():
+            self._bind_attr(widget, attr_name, value, context)
         # By default, show the widget.
         if hasattr(widget, 'pack') and not skip_register:
             widget._tkvue_register = True
@@ -1073,16 +1199,19 @@ class Component:
         return self.loop
 
     def _mainloop(self):
-        self.root.after(1, self.__update_asyncio)
+        # Register asyncio callback when tkinter event loop is starting
+        self.update_asyncio_command_name = self.root._register(self._update_asyncio)
+        self.root.tk.call('after', 1, self.update_asyncio_command_name)
+        # Start event loop
         self.root.mainloop()
 
-    def __update_asyncio(self):
+    def _update_asyncio(self):
         """
         This function run a complete iteration of asyncio.
         """
         self.loop.call_soon(self.loop.stop)
         self.loop.run_forever()
-        self.after(50, self.__update_asyncio)
+        self.root.tk.call('after', 50, self.update_asyncio_command_name)
 
     def _modal(self):
         """

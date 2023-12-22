@@ -13,9 +13,8 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
-import tkinter.ttk as ttk
-
 import os
+import tkinter.ttk as ttk
 
 import tkvue
 
@@ -34,7 +33,7 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"icon_path": os.path.normpath(os.path.join(__file__, '../python_icon.png'))})
+    icon_path = tkvue.state(os.path.normpath(os.path.join(__file__, '../python_icon.png')))
 
     def __init__(self, master=None):
         super().__init__(master)

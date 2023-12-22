@@ -28,16 +28,16 @@ class ErrorFrame(tkvue.Component):
     </Frame>
 </Frame>
 """
+    text = tkvue.state("Error notification")
+    subtext = tkvue.state("Error notification")
 
-    def __init__(self, master=None):
-        self.data = tkvue.Context({"text": "Error notification", "subtext": "Subtitle text goes here."})
-        super().__init__(master)
+    @tkvue.attr('text')
+    def set_text(self, value):
+        self.text.value = value
 
-    def configure(self, cnf=None, **kw):
-        if 'text' in kw:
-            self.data.text = kw.pop('text')
-        if 'subtext' in kw:
-            self.data.subtext = kw.pop('subtext')
+    @tkvue.attr('subtext')
+    def set_subtext(self, value):
+        self.subtext.value = value
 
 
 class RootDialog(tkvue.Component):
@@ -52,7 +52,6 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"win_width": 150, "win_height": 150})
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
