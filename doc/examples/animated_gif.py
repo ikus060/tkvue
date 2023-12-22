@@ -30,7 +30,9 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"show": True, "icon_path": os.path.normpath(os.path.join(__file__, '../dots.gif'))})
+
+    show = tkvue.state(True)
+    icon_path = tkvue.state(os.path.normpath(os.path.join(__file__, '../dots.gif')))
 
 
 if __name__ == "__main__":

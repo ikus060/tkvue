@@ -24,7 +24,6 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({'show': True})
 
 
 if __name__ == "__main__":

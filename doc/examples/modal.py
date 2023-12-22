@@ -44,23 +44,26 @@ class ModalDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
+    username = tkvue.state('')
+    password = tkvue.state('')
 
     def __init__(self, master=None):
-        self.data = tkvue.Context({'username': '', 'password': ''})
         super().__init__(master)
         self.root.bind('<Return>', self.return_event)
         self.root.bind('<Key-Escape>', self.cancel_event)
 
+    @tkvue.command
     def return_event(self, event=None):
         # Quit this windows
-        if self.data['password']:
+        if self.password.value:
             self.root.destroy()
         else:
             self.root.bell()
 
+    @tkvue.command
     def cancel_event(self, event=None):
         # Remove password value
-        self.data['password'] = ''
+        self.password.value = ''
         # Close this windows
         self.root.destroy()
 
@@ -75,16 +78,16 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({'returnvalue': ''})
+    returnvalue = tkvue.state('')
 
     def __init__(self, master=None):
         super().__init__(master)
-        self.root.tk.eval('tk::PlaceWindow %s pointer' % (self.root))
 
+    @tkvue.command
     def show_modal(self, event=None):
         dlg = ModalDialog(self.root)
         dlg.modal()
-        self.data['returnvalue'] = dlg.data['password']
+        self.returnvalue.value = dlg.password.value
 
 
 if __name__ == "__main__":

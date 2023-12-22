@@ -29,13 +29,7 @@ class RootDialog(tkvue.Component):
         </ScrolledFrame>
     </Frame>
 </TopLevel>
-
-
     """
-    data = tkvue.Context({})
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
 
 if __name__ == "__main__":

@@ -14,17 +14,17 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 import os
-
-import tkvue
 import tkinter
 
-@tkvue.widget('canvastext')
-class CanvasItem():
+import tkvue
 
+
+@tkvue.widget('canvastext')
+class CanvasItem:
     def __init__(self, master, **kwargs):
         assert master and isinstance(master, tkinter.Canvas)
         self._canvas = master
-        self._item = self._canvas.create_text(0,0)
+        self._item = self._canvas.create_text(0, 0)
 
     def configure(self, **kwargs):
         moveto = kwargs.pop('moveto', False)
@@ -32,11 +32,12 @@ class CanvasItem():
             self._canvas.moveto(self._item, *moveto.split(' '))
         else:
             self._canvas.itemconfigure(self._item, **kwargs)
-    
+
+
 @tkvue.attr('moveto', CanvasItem)
 def moveto(self, value):
     self._canvas.moveto(self._item, *value.split(' '))
-        
+
 
 class RootDialog(tkvue.Component):
     template = """
@@ -47,11 +48,7 @@ class RootDialog(tkvue.Component):
     </Canvas>
 </TopLevel>
     """
-    data = tkvue.Context(
-        {
-            "bg": os.path.normpath(os.path.join(__file__, '../bg.png')),
-        }
-    )
+    bg = tkvue.state(os.path.normpath(os.path.join(__file__, '../bg.png')))
 
 
 if __name__ == "__main__":

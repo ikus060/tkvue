@@ -87,7 +87,14 @@ Other Tkinter-related projects worth mentioning:
 
 ## Changelog
 
-## 2.1.6 ()
+## 3.0.0 (Next release)
+
+* Change implementation of observable context for more flexibility.
+* `@tkvue.computed_property()` should be used to register observable computed property with cache support.
+* `@tkvue.command` should be used to register functions.
+* `tkvue.state()` should be used to register observable state.
+
+## 2.1.6 (2023-01-07)
 
 * Add support `@tkvue.computed()` annotation to register attribute dynamically
 * Add support Python 3.12

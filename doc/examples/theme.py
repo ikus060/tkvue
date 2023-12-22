@@ -30,16 +30,19 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({'theme': 'clam'})
+    theme = tkvue.state('clam')
 
+    @tkvue.command
     def set_clam(self, event=None):
-        self.data['theme'] = 'clam'
+        self.theme.value = 'clam'
 
+    @tkvue.command
     def set_alt(self, event=None):
-        self.data['theme'] = 'alt'
+        self.theme.value = 'alt'
 
+    @tkvue.command
     def set_default(self, event=None):
-        self.data['theme'] = 'default'
+        self.theme.value = 'default'
 
 
 if __name__ == "__main__":

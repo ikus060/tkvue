@@ -29,6 +29,7 @@ class RootDialog(tkvue.Component):
             <Label text="Password:" pack-side="left" width="15" />
             <Entry textvariable="{{password}}" show="•" pack-fill="x" pack-side="left" />
         </Frame>
+        <Label text="is valid" visible="{{valid}}" />
         <Frame pack-side="bottom" pack-anchor="se" padding="0 3">
             <Button text="OK" pack-side="left" width="10" pack-fill="both" pack-padx="0 8" state="{{'disabled' if not valid else '!disabled'}}" />
             <Button text="Cancel" pack-side="left" width="10" pack-fill="both"/>
@@ -36,10 +37,14 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context(
-        {"username": "", "password": "", "valid": tkvue.computed(lambda data: data.username and data.password)}
-    )
+    username = tkvue.state('')
+    password = tkvue.state('')
 
+    @tkvue.computed_property
+    def valid(self):
+        return self.username.value and self.password.value
+
+    @tkvue.command
     def btn_clicked(self):
         print('Button clicked')
 

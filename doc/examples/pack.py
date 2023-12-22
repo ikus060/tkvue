@@ -15,8 +15,6 @@
 # USA
 import tkinter.ttk as ttk
 
-import os
-
 import tkvue
 
 tkvue.configure_tk(theme="clam")
@@ -51,7 +49,6 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"icon_path": os.path.normpath(os.path.join(__file__, '../python_icon.png'))})
 
     def __init__(self, master=None):
         super().__init__(master)

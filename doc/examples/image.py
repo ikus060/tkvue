@@ -43,7 +43,7 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"icon_path": os.path.normpath(os.path.join(__file__, '../python_icon.png'))})
+    icon_path = tkvue.state(os.path.normpath(os.path.join(__file__, '../python_icon.png')))
 
 
 if __name__ == "__main__":
