@@ -15,7 +15,6 @@
 # USA
 import tkinter.ttk as ttk
 
-
 import tkvue
 
 tkvue.configure_tk(theme="clam")
@@ -30,7 +29,8 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"is_blue": False})
+
+    is_blue = tkvue.state(False)
 
     def __init__(self, master=None):
         super().__init__(master)
@@ -54,8 +54,9 @@ class RootDialog(tkvue.Component):
             background=[('disabled', '#525252'), ('hover !disabled', '#0353e9'), ('pressed !disabled', '#002d9c')],
         )
 
+    @tkvue.command
     def _toggle_style(self):
-        self.data.is_blue = not self.data.is_blue
+        self.is_blue.value = not self.is_blue.value
 
 
 if __name__ == "__main__":

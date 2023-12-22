@@ -30,12 +30,13 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"myvalues": ["zero", "one", "two", "three"], "selected_value": "one"})
+    myvalues = tkvue.state(["zero", "one", "two", "three"])
+    selected_value = tkvue.state("one")
 
     def __init__(self, master=None):
         super().__init__(master)
         # We could register an observer to get notify when the value is updated
-        self.data.watch('selected_value', self.on_value_changed)
+        self.selected_value.subscribe(self.on_value_changed)
 
     def on_value_changed(self, new_value):
         print('new value selected: ' + new_value)

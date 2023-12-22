@@ -13,9 +13,8 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
-import tkinter.ttk as ttk
-
 import os
+import tkinter.ttk as ttk
 
 import tkvue
 
@@ -46,26 +45,20 @@ class RootDialog(tkvue.Component):
     <Frame pack-fill="both" pack-expand="1" pack-side="left">
         <label text="compound=none" />
         <Button text="Click Me" image="{{icon_path}}" compound="none" pack-pady="0 15"/>
-        
         <label text="compound=bottom" />
         <Button text="Click Me" image="{{icon_path}}" compound="bottom" pack-pady="0 15"/>
-        
         <label text="compound=top" />
         <Button text="Click Me" image="{{icon_path}}" compound="top" pack-pady="0 15"/>
-        
         <label text="compound=left" />
         <Button text="Click Me" image="{{icon_path}}" compound="left" pack-pady="0 15"/>
-        
         <label text="compound=right" />
         <Button text="Click Me" image="{{icon_path}}" compound="right" pack-pady="0 15"/>
-        
         <label text="compound=center" />
         <Button text="Click Me" image="{{icon_path}}" compound="center" pack-pady="0 15"/>
-        
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"icon_path": os.path.normpath(os.path.join(__file__, '../python_icon.png'))})
+    icon_path = tkvue.state(os.path.normpath(os.path.join(__file__, '../python_icon.png')))
 
     def __init__(self, master=None):
         super().__init__(master)

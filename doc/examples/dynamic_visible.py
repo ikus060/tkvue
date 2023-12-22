@@ -29,7 +29,8 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({'show_pack': True, 'show_grid':True})
+    show_pack = tkvue.state(True)
+    show_grid = tkvue.state(True)
 
 
 if __name__ == "__main__":

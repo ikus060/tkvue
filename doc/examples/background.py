@@ -25,11 +25,7 @@ class RootDialog(tkvue.Component):
     <Button text="Click Me" pack-expand="1" />
 </TopLevel>
     """
-    data = tkvue.Context(
-        {
-            "bg": os.path.normpath(os.path.join(__file__, '../bg.png')),
-        }
-    )
+    bg = tkvue.state(os.path.normpath(os.path.join(__file__, '../bg.png')))
 
 
 if __name__ == "__main__":

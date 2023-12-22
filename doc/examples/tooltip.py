@@ -36,7 +36,7 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"tooltip_value": "Tooltip value to be displayed"})
+    tooltip_value = tkvue.state("Tooltip value to be displayed")
 
     def __init__(self, master=None):
         super().__init__(master)

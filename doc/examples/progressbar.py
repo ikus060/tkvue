@@ -28,11 +28,7 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context(
-        {
-            "progress": 20,
-        }
-    )
+    progress = tkvue.state(20)
 
     def __init__(self, master=None):
         super().__init__(master)
@@ -40,7 +36,7 @@ class RootDialog(tkvue.Component):
 
     async def _update(self):
         while self.root.winfo_exists():
-            self.data['progress'] = (self.data['progress'] + 1) % 100
+            self.progress.value = (self.progress.value + 1) % 100
             # Sleep 50ms
             await asyncio.sleep(0.05)
 

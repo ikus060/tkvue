@@ -26,8 +26,9 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"btn_disabled": False})
+    btn_disabled = tkvue.state(False)
 
+    @tkvue.command
     def btn_clicked(self):
         print('Button clicked')
 

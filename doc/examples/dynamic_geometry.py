@@ -33,7 +33,8 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({"win_width": 200, "win_height": 100})
+    win_width = tkvue.state(200)
+    win_height = tkvue.state(100)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -28,7 +28,7 @@ class RootDialog(tkvue.Component):
     </Frame>
 </TopLevel>
     """
-    data = tkvue.Context({'count': 5})
+    count = tkvue.state(5)
 
 
 if __name__ == "__main__":
