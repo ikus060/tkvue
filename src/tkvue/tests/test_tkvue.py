@@ -204,9 +204,9 @@ class Dialog(tkvue.Component):
             <Radiobutton id="three" variable="{{selected_number}}" value="3" text="3"/>
         </Frame>
         <Frame pack-fill="x" pack-expand="1">
-            <Checkbutton id="checkbutton" text="foo" selected="{{checkbutton_selected}}" command="checkbutton_invoke"/>
+            <Checkbutton id="checkbutton" text="foo" selected="{{checkbutton_selected}}" command="{{checkbutton_invoke}}"/>
             <Checkbutton id="checkbutton2" text="leader" variable="{{checkbutton_selected}}"/>
-            <Checkbutton id="checkbutton3" text="follower" selected="{{checkbutton_selected}}" command="funcation_call_with_args('arg1')"/>
+            <Checkbutton id="checkbutton3" text="follower" selected="{{checkbutton_selected}}" command="{{funcation_call_with_args('arg1')}}"/>
         </Frame>
         <CustomComponent></CustomComponent>
     </TopLevel>
@@ -293,7 +293,7 @@ class DialogWithScrolledFrame(tkvue.Component):
 class DialogWithInvalidCommand(tkvue.Component):
     template = """
     <TopLevel>
-        <Checkbutton id="checkbutton" text="foo" selected="True" command="invalid_command"/>
+        <Checkbutton id="checkbutton" text="foo" selected="True" command="{{invalid_command}}"/>
     </TopLevel>
     """
 

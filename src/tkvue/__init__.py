@@ -444,8 +444,10 @@ def _create_command(expr, context):
     Command may only be define when creating widget.
     So let process this attribute before creating the widget.
     """
-    if expr.startswith("{{"):
-        raise ValueError("cannot use binding ({{) in `command` attribute: " + expr)
+    assert expr.startswith("{{") and expr.endswith("}}"), (
+        "command's value should we wrap in curly braquet {{ funcation_name() }}: " + expr
+    )
+    expr = expr[2:-2].strip()
     # May need to adjust this to detect expression.
     if "(" in expr or "=" in expr:
         func = _eval_func(expr, context)
@@ -455,7 +457,7 @@ def _create_command(expr, context):
             if func is None or not callable(func):
                 raise ValueError('`command` attribute must define a function name or a function call: ' + expr)
         except KeyError:
-            raise ValueError('cannot find function name for `command` attribute: ' + expr)
+            raise ValueError('cannot find function name for command attribute: ' + expr)
     return func
 
 
@@ -778,7 +780,9 @@ class Loop:
     def __init__(self, tree, for_expr, master, context, widget_factory):
         assert tree
         assert " in " in for_expr, "for attribute should have the following form: {{ <target> in <list> }}" + for_expr
-        assert for_expr.startswith("{{") and for_expr.endswith("}}"), "for attribute should we wrap in curly braquet {{ <target> in <list> }}: " + for_expr
+        assert for_expr.startswith("{{") and for_expr.endswith("}}"), (
+            "for attribute should we wrap in curly braquet {{ <target> in <list> }}: " + for_expr
+        )
         assert master
         assert context
         self.tree = tree.copy()
@@ -1060,14 +1064,17 @@ class Component:
         real_widget = _real_widget(widget)
         # Find the setter function for tthis attribute using the registry.
         setter = self._find_attr(widget, attr_name)
-        if value.startswith("{{") and value.endswith("}}"):
+        if attr_name.endswith('command'):
+            # Wrap the command value as a function
+            command = _create_command(value, context)
+            setter(command)
+        elif value.startswith("{{") and value.endswith("}}"):
             # Truncate curly braquet {{ }}
             value = value[2:-2].strip()
             # Create an observable from the expression
             obj = _computed_expression(value, context)
             # Check if dual data binding should be put in place.
             dual = attr_name.endswith('variable')
-            command = attr_name.endswith('command')
             # Evaluate expression a first time to get the variable type.
             if dual:
                 # Resolve value first, to raise any exception.
@@ -1099,10 +1106,6 @@ class Component:
                 lambda event, obj=obj, update_func=update_func: obj.unsubscribe(update_func),
                 add="+",
             )
-        elif attr_name.endswith('command'):
-            # Wrap the command value as a function
-            command = _create_command(value, context)
-            setter(command)
         else:
             # Plain value with evaluation.
             setter(value)
@@ -1120,18 +1123,11 @@ class Component:
             widget_cls = _components.get(tag, None)
         assert widget_cls, "cannot find widget matching tag name: " + tag
 
-        # The "command" attribute must be pass during widget construction.
-        kwargs = {}
-        # if "command" in attrs:
-        #    kwargs["command"] = _create_command(self, attrs["command"], context)
-
-        #
         # Create widget.
-        #
-        widget = widget_cls(master=master, **kwargs)
+        widget = widget_cls(master=master)
         assert not isinstance(widget, Component) or getattr(
             widget, 'root'
-        ), 'Component not initialized properly. Did you forget to call `super().__init__(master)` is your custom component ?'
+        ), 'Component not initialized properly. Did you forget to call `super().__init__(master)` in your custom component ?'
 
         #
         # Assign widget to variables.

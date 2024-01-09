@@ -22,7 +22,7 @@ class RootDialog(tkvue.Component):
 <TopLevel title="TKVue Test">
     <Frame pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
         <Checkbutton variable="{{btn_disabled}}" text="Disable button" />
-        <Button text="Click Me" command="btn_clicked" state="{{'disabled' if btn_disabled else '!disabled'}}"/>
+        <Button text="Click Me" command="{{btn_clicked}}" state="{{'disabled' if btn_disabled else '!disabled'}}"/>
     </Frame>
 </TopLevel>
     """

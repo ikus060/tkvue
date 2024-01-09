@@ -20,13 +20,13 @@ class RootDialog(tkvue.Component):
     template = """
 <TopLevel geometry="322x261" title="TKVue Test" theme="{{theme}}">
     <Frame pack-fill="both" pack-expand="true" padding="10" >
-        <Button text="Switch to Clam Theme" command="set_clam" />
+        <Button text="Switch to Clam Theme" command="{{set_clam}}" />
     </Frame>
     <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Button text="Switch to Alt Theme" command="set_alt" />
+        <Button text="Switch to Alt Theme" command="{{set_alt}}" />
     </Frame>
     <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Button text="Switch to Default Theme" command="set_default" />
+        <Button text="Switch to Default Theme" command="{{set_default}}" />
     </Frame>
 </TopLevel>
     """

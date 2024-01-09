@@ -25,7 +25,7 @@ class RootDialog(tkvue.Component):
 <TopLevel title="TKVue Test">
     <Frame pack-fill="both" pack-expand="1" pack-side="left">
         <label text="Click button to change style" />
-        <Button id="label" text="Click Me" pack-pady="0 15" style="{{'blue.TButton' if is_blue else 'TButton'}}" command="_toggle_style"/>
+        <Button id="label" text="Click Me" pack-pady="0 15" style="{{'blue.TButton' if is_blue else 'TButton'}}" command="{{_toggle_style}}"/>
     </Frame>
 </TopLevel>
     """

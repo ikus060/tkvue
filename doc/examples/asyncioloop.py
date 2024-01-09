@@ -30,7 +30,7 @@ class RootDialog(tkvue.Component):
         <Label image="{{icon_path}}" visible="{{show}}" background="#ffffff" />
     </Frame>
     <Frame>
-        <Button id="check_latest_version_button" text="Check now" command="_check_latest_version" pack-side="right"
+        <Button id="check_latest_version_button" text="Check now" command="{{_check_latest_version}}" pack-side="right"
                 pack-pady="5" />
         <Label text="Checking for updates..." compound="left" visible="{{checking_for_update}}"
             anchor="e" pack-fill="x" />

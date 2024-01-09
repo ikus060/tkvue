@@ -38,8 +38,8 @@ class ModalDialog(tkvue.Component):
 
         <!-- Buttons -->
         <Frame pack-side="bottom" pack-anchor="se" padding="0 3">
-            <Button text="OK" pack-side="left" width="10" pack-fill="both" pack-padx="0 8" command="return_event" state="{{'disabled' if not password else '!disabled'}}" />
-            <Button text="Cancel" pack-side="left" width="10" pack-fill="both" command="cancel_event"/>
+            <Button text="OK" pack-side="left" width="10" pack-fill="both" pack-padx="0 8" command="{{return_event}}" state="{{'disabled' if not password else '!disabled'}}" />
+            <Button text="Cancel" pack-side="left" width="10" pack-fill="both" command="{{cancel_event}}"/>
         </Frame>
     </Frame>
 </TopLevel>
@@ -72,7 +72,7 @@ class RootDialog(tkvue.Component):
     template = """
 <TopLevel geometry="322x261" title="TKVue Test" >
     <Frame pack-fill="both" pack-expand="true" padding="10" >
-        <Button text="Show modal Dialog" command="show_modal" />
+        <Button text="Show modal Dialog" command="{{show_modal}}" />
         <Label text="Modal dialog return value: " />
         <Label text="{{ returnvalue }}" />
     </Frame>
