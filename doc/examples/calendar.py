@@ -33,8 +33,8 @@ class Calendar(tkvue.Component):
         <Button text=">" command="_next" pack-side="right" width="3"/>
         <Label text="{{ title }}" pack-side="top" pack-padx="10 10" pack-fill="both" pack-expand="1" anchor="center"/>
     </Frame>
-    <Label for="d in weekdays" text="{{ d }}" grid-column="{{ loop_idx }}" grid-row="2"/>
-    <Button for="d in dates" text="{{ d[2] }}" grid-column="{{ loop_idx % 7 }}" grid-row="{{ 2 + int(loop_idx / 7) }}" command="_select(d)"/>
+    <Label for="{{d in weekdays}}" text="{{ d }}" grid-column="{{ loop_idx }}" grid-row="2"/>
+    <Button for="{{d in dates}}" text="{{ d[2] }}" grid-column="{{ loop_idx % 7 }}" grid-row="{{ 2 + int(loop_idx / 7) }}" command="_select(d)"/>
 
 </Frame>
     """

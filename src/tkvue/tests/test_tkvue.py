@@ -189,7 +189,7 @@ class Dialog(tkvue.Component):
             <Button id="button" visible="{{button_visible}}" text="Visible" />
         </Frame>
         <Frame id="people" pack-fill="x" pack-expand="1">
-            <Label for="i in names" text="{{i}}" />
+            <Label for="{{i in names}}" text="{{i}}" />
         </Frame>
         <label id="count1_label" text="{{count1}}" />
         <Frame pack-fill="x" pack-expand="1">
@@ -263,7 +263,7 @@ class DialogWithTooltip(tkvue.Component):
 class DialogWithLoop(tkvue.Component):
     template = """
     <TopLevel>
-        <Label text="{{item}}" for="item in items"/>
+        <Label text="{{item}}" for="{{item in items}}"/>
     </TopLevel>
     """
     items = tkvue.state([])
@@ -272,7 +272,7 @@ class DialogWithLoop(tkvue.Component):
 class DialogWithCustomComponentLoop(tkvue.Component):
     template = """
     <TopLevel>
-        <CustomComponent for="item in items" />
+        <CustomComponent for="{{item in items}}" />
     </TopLevel>
     """
     items = tkvue.state([])
@@ -282,7 +282,7 @@ class DialogWithScrolledFrame(tkvue.Component):
     template = """
     <TopLevel geometry="500x500">
         <ScrolledFrame id="scrolled_frame" pack-fill="both" pack-expand="1">
-            <Frame for="item in range(1,10)" pack-fill="x"  pack-expand="1">
+            <Frame for="{{item in range(1,10)}}" pack-fill="x"  pack-expand="1">
                 <Label pack-fill="x" pack-expand="1" text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. " wrap="1"/>
             </Frame>
         </ScrolledFrame>
@@ -313,7 +313,7 @@ class DialogNotResizable(tkvue.Component):
     template = """
     <TopLevel geometry="322x261" resizable="False False">
         <ScrolledFrame id="scrolled_frame">
-            <Label text="{{item}}" for="item in range(1,25)"/>
+            <Label text="{{item}}" for="{{item in range(1,25)}}"/>
         </ScrolledFrame>
     </TopLevel>
     """
@@ -379,8 +379,8 @@ class DialogWithStyle(tkvue.Component):
 class DialogWithLoopInLoop(tkvue.Component):
     template = """
     <TopLevel style="default.TFrame">
-        <LabelFrame for="item in items" text="{{ '%s / %s' % (loop_idx, len(item)) }}">
-            <Label for="char in item" text="{{ '%s: %s' % (loop_idx, char) }}" pack-padx="5"/>
+        <LabelFrame for="{{item in items}}" text="{{ '%s / %s' % (loop_idx, len(item)) }}">
+            <Label for="{{char in item}}" text="{{ '%s: %s' % (loop_idx, char) }}" pack-padx="5"/>
         </LabelFrame>
     </TopLevel>
     """

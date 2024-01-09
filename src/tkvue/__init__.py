@@ -777,7 +777,8 @@ class Loop:
 
     def __init__(self, tree, for_expr, master, context, widget_factory):
         assert tree
-        assert " in " in for_expr, "for expression must have the for <target> in <list>"
+        assert " in " in for_expr, "for attribute should have the following form: {{ <target> in <list> }}" + for_expr
+        assert for_expr.startswith("{{") and for_expr.endswith("}}"), "for attribute should we wrap in curly braquet {{ <target> in <list> }}: " + for_expr
         assert master
         assert context
         self.tree = tree.copy()
@@ -788,6 +789,7 @@ class Loop:
         self.idx = 0
         self.widgets = []
         # Validate expression by evaluating it.
+        for_expr = for_expr[2:-2].strip()
         self.loop_target, unused, self.loop_items = for_expr.partition(" in ")
         # Register our self
         obj = _computed_expression(self.loop_items, context)

@@ -23,7 +23,7 @@ class RootDialog(tkvue.Component):
         <Label text="Selection number of row to display:" />
         <Combobox values="{{ list(range(1, 100)) }}" textvariable="{{ count }}"/>
         <Frame pack-fill="both" pack-expand="1" pack-side="left">
-            <Label pack-fill="x" pack-expand="1" for="i in range(1, count)" text="{{ 'row %s' % i }}" />
+            <Label pack-fill="x" pack-expand="1" for="{{i in range(1, count)}}" text="{{ 'row %s' % i }}" />
         </Frame>
     </Frame>
 </TopLevel>
