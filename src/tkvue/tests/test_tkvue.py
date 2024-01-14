@@ -254,7 +254,7 @@ class DialogWithTooltip(tkvue.Component):
     template = """
     <TopLevel>
         <Label id="label1" text="Label with tooltip">
-            <Tooltip id="tooltip" text="This is a tooltip" />
+            <Tooltip id="tooltip" text="This is a tooltip" width="15" timeout="500" padding="10" />
         </Label>
     </TopLevel>
     """
