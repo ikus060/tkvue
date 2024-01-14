@@ -110,24 +110,24 @@ def attr(attr_name, widget_cls=None):
         @tkvue.attr('foo')
         def foo(widget, value):
             widget.some_call(value)
-    ```
-    """
+    ```"""
+    if isinstance(widget_cls, type):
+        widget_cls = [widget_cls]
 
-    def decorate(f):
-        assert callable(f), '@tkvue.attr() required a callable function'
+    def decorate(func):
+        assert callable(func), '@tkvue.attr() required a callable function'
         if isinstance(widget_cls, (list, tuple)):
-            for c in widget_cls:
-                _attrs[(c, attr_name)] = f
-        elif widget_cls:
-            _attrs[(widget_cls, attr_name)] = f
+            # Register each attributes
+            for cls in widget_cls:
+                _attrs.setdefault(attr_name, {})[cls] = func
         else:
-            # Most likely used @tkvue.attr on class method.
+            # Most likely @tkvue.attr() on class method.
             assert (
-                '.' in f.__qualname__
+                '.' in func.__qualname__
             ), '@tkvue.attr(attr_name) can only be used on class method, otherwise you must define widget_cls explicitly.'
             # The widget class cannot be retrieve at class initialization.
-            f.__tkvue_attr_name__ = attr_name
-        return f
+            func._tkvue_attr_name = attr_name
+        return func
 
     return decorate
 
@@ -137,9 +137,18 @@ def widget(widget_name):
     Function decorator to register a widget.
     """
 
-    def decorate(f):
-        _widgets[widget_name] = f
-        return f
+    def decorate(cls):
+        _widgets[widget_name] = cls
+        # Collect _tkvue_attr_name
+        attrs = {}
+        for key in dir(cls):
+            member = getattr(cls, key)
+            attr_name = getattr(member, '_tkvue_attr_name', False)
+            if attr_name:
+                attrs[attr_name] = member
+        if attrs:
+            cls._tkvue_attrs = attrs
+        return cls
 
     return decorate
 
@@ -205,7 +214,7 @@ class computed_property(Observable):
     Class decorator
     """
 
-    __tkvue_expose__ = True
+    _tkvue_expose = True
 
     def __init__(self, func) -> None:
         assert callable(func), 'computed_property required a function'
@@ -215,6 +224,8 @@ class computed_property(Observable):
         self._name = name
 
     def __get__(self, instance, owner):
+        if instance is None:
+            return self
         func = functools.partial(self._func, instance)
         return_instance = computed_property(func)
         instance.__dict__[self._name] = return_instance
@@ -253,7 +264,7 @@ class state(Observable):
     Create a state().
     """
 
-    __tkvue_expose__ = True
+    _tkvue_expose = True
 
     def __init__(self, initial_value) -> None:
         assert hasattr(initial_value, "__hash__"), "unhashable type '%s'" % type(initial_value)
@@ -263,6 +274,8 @@ class state(Observable):
         self._name = name
 
     def __get__(self, instance, owner):
+        if instance is None:
+            return self
         return_instance = state(self._value)
         instance.__dict__[self._name] = return_instance
         return return_instance
@@ -292,7 +305,7 @@ def command(obj):
             print("button click")
     """
     assert callable(obj), 'tkvue.command() required a function'
-    obj.__tkvue_expose__ = True
+    obj._tkvue_expose = True
     return obj
 
 
@@ -358,7 +371,7 @@ def create_toplevel(master=None):
         if root != event.widget:
             return
         # Update TopLevel background according to TTK Style.
-        style_name = getattr(root, '__tkvue_style__', 'TFrame')
+        style_name = getattr(root, '_tkvue_toplevel_style', 'TFrame')
         bg = ttk.Style(master=root).lookup(style_name, "background")
         root.configure(background=bg)
 
@@ -462,7 +475,15 @@ def _create_command(expr, context):
 
 
 def _configure(widget, key, value):
-    widget.configure(**{key: value})
+    """Stack all configuration if widget is not registered to minimize number of tk.call"""
+    # If widget is registered, simply call configure.
+    if getattr(widget, '_tkvue_register', False):
+        widget.configure(**{key: value})
+    else:
+        # Otherwise, store the values
+        if not getattr(widget, '_tkvue_configure', False):
+            widget._tkvue_configure = dict()
+        widget._tkvue_configure[key] = value
 
 
 @attr("id", tkinter.Widget)
@@ -475,7 +496,7 @@ def _configure_id_noop(widget, value):
 def _configure_command(widget, value):
     """Assign function to command"""
     assert value is None or callable(value), "expect a callable function for command"
-    widget.configure(command=value)
+    _configure(widget, 'command', value)
 
 
 @attr("visible", tkinter.Widget)
@@ -552,7 +573,7 @@ def _configure_title(widget, value):
 
 @attr("text", tkinter.Widget)
 def _configure_text(widget, value):
-    widget.configure(text=gettext(value))
+    _configure(widget, 'text', gettext(value))
 
 
 @attr("selected", (ttk.Button, ttk.Checkbutton))
@@ -565,7 +586,7 @@ def _configure_toplevel_style(widget, style_name):
     # Update TopLevel background according to TTK Style.
     bg = ttk.Style(master=widget).lookup(style_name, "background")
     widget.configure(background=bg)
-    widget.__tkvue_style__ = style_name
+    widget._tkvue_toplevel_style = style_name
 
 
 @attr("image", ttk.Widget)
@@ -744,26 +765,19 @@ class ToolTip(ttk.Frame):
         # Do nothing This widget must not be pack
         pass
 
-    def configure(self, cnf={}, **kw):
-        # Text
-        self.text = cnf.pop("text", kw.pop("text", self.text))
-        # Timeout
-        timeout = cnf.pop("timeout", kw.pop("timeout", self.timeout))
-        assert timeout >= 0, "timeout should be greater or equals zero (0): %s" % timeout
-        self.timeout = timeout
-        # Width
-        self.width = cnf.pop("width", kw.pop("width", self.width))
-        # Pass other config to widget.
-        super().configure(cnf, **kw)
+    @attr('text')
+    def set_text(self, value):
+        self.text = value
 
-    def cget(self, key):
-        if key == "text":
-            return self.text
-        elif key == "timeout":
-            return self.timeout
-        elif key == "width":
-            return self.width
-        return super().cget(key)
+    @attr('timeout')
+    def set_timeout(self, value):
+        assert value >= 0, "timeout should be greater or equals to zero (0): %s" % value
+        self.timeout = value
+
+    @attr('width')
+    def set_width(self, value):
+        assert value > 0, "width should be greater then zero (0): %s" % value
+        self.width = value
 
     def bind(self, *args, **kwargs):
         self.widget.bind(*args, **kwargs)
@@ -989,11 +1003,20 @@ class Component:
 
     def __init_subclass__(cls, **kwargs):
         """
-        When creating subclass of component, we need to register the component and it's cusotm attributes.
+        When creating subclass of component, we need to register the component and it's custom attributes.
         """
         if cls not in _components:
             # Register the component class
             _components[cls.__name__.lower()] = cls
+            # Collect _tkvue_attr_name
+            attrs = {}
+            for key in dir(cls):
+                member = getattr(cls, key)
+                attr_name = getattr(member, '_tkvue_attr_name', False)
+                if attr_name:
+                    attrs[attr_name] = member
+            if attrs:
+                cls._tkvue_attrs = attrs
         super().__init_subclass__(**kwargs)
 
     def __init__(self, master=None):
@@ -1001,11 +1024,11 @@ class Component:
         assert hasattr(self, "template"), "component %s must define a template" % self.__class__.__name__
         self.root = None
 
-        # Collect __tkvue_expose__ members (function or properties)
+        # Collect _tkvue_expose members (function or properties)
         initial_data = {}
         for key in dir(self):
             value = getattr(self, key)
-            if getattr(value, '__tkvue_expose__', False):
+            if getattr(value, '_tkvue_expose', False):
                 # Get bound method or property
                 initial_data[key] = value
 
@@ -1034,22 +1057,18 @@ class Component:
         Lookup attribute registry for the proper setter function.
         """
         # Lookup @attr() declared on class
-        if isinstance(widget, Component):
-            for key in dir(widget):
-                member = getattr(widget, key)
-                if callable(member) and getattr(member, '__tkvue_attr_name__', False) == attr_name:
-                    return member
+        attr_mapping = getattr(widget.__class__, '_tkvue_attrs', False)
+        if attr_mapping and attr_name in attr_mapping:
+            func = attr_mapping.get(attr_name)
+            return functools.partial(func, widget)
 
         # Lookup attribute registry
-        real_widget = _real_widget(widget)
-        func = [
-            func
-            for a, func in _attrs.items()
-            if a[1] == attr_name
-            if isinstance(widget, a[0]) or isinstance(real_widget, a[0])
-        ]
-        if func:
-            return functools.partial(func[0], widget)
+        attr_mapping = _attrs.get(attr_name, False)
+        if attr_mapping:
+            real_widget = _real_widget(widget)
+            for cls, func in attr_mapping.items():
+                if isinstance(widget, cls) or isinstance(real_widget, cls):
+                    return functools.partial(func, widget)
         else:
             # Otherwise default to widget configure
             return functools.partial(_configure, widget, attr_name)
@@ -1140,6 +1159,10 @@ class Component:
         #
         for attr_name, value in attrs.items():
             self._bind_attr(widget, attr_name, value, context)
+        # Apply all configure at once to minimize number of tk call.
+        if getattr(widget, '_tkvue_configure', False):
+            widget.configure(widget._tkvue_configure)
+            delattr(widget, '_tkvue_configure')
         # By default, show the widget.
         if hasattr(widget, 'pack') and not skip_register:
             widget._tkvue_register = True
