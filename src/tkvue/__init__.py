@@ -27,7 +27,9 @@ def _eval_func(expr, context):
     Create a function to execute eval() within the given context
     """
     assert isinstance(expr, str), 'expect an expression'
-    return functools.partial(eval, expr, EMPTY_GLOBALS, context)
+    func = functools.partial(eval, expr, EMPTY_GLOBALS, context)
+    func.__expr__ = expr
+    return func
 
 
 # Local data for watcher tracking.
@@ -245,7 +247,10 @@ class computed_property(Observable):
             return self._value
         # Compute new value
         with self.track_dependencies():
-            return_value = self._func()
+            try:
+                return_value = self._func()
+            except Exception:
+                raise Exception('error during evaluation of computed_property: %s' % getattr(self._func, '__expr__', self._func))
         self._dirty = False
         self._value = return_value
         return return_value

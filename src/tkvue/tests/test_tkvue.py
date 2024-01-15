@@ -163,7 +163,19 @@ class DataTest(unittest.TestCase):
         month.value = 10
         # The listener should be called
         self.assertEqual([1], listener)
-
+    
+    def test_computed_raise_error(self):
+        # Given a computed property that raise an error.
+        obj = tkvue.state(None)
+        days = tkvue.computed_property(lambda obj=obj: obj.value.test)
+        # When getting computed property value
+        # Then an error is raised
+        with self.assertRaises(ValueError):
+            days.value
+        # When adding computed property to context
+        # Then an error is raised
+        with self.assertRaises(ValueError):
+            tkvue._Context({'days': days})
 
 class CustomComponent(tkvue.Component):
     template = """
