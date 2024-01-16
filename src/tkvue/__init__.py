@@ -250,7 +250,9 @@ class computed_property(Observable):
             try:
                 return_value = self._func()
             except Exception:
-                raise Exception('error during evaluation of computed_property: %s' % getattr(self._func, '__expr__', self._func))
+                raise Exception(
+                    'error during evaluation of computed_property: %s' % getattr(self._func, '__expr__', self._func)
+                )
         self._dirty = False
         self._value = return_value
         return return_value
@@ -878,12 +880,13 @@ class ScrolledFrame(ttk.Frame):
         # create a frame inside the canvas which will be scrolled with it
         self.interior = ttk.Frame(self.canvas)
         self.interior_id = self.canvas.create_window(0, 0, window=self.interior, anchor=tkinter.NW)
-
         self.interior.bind("<Configure>", self._update_scroll_region)
         self.canvas.bind("<Configure>", self._configure_canvas)
         self.canvas.bind("<Enter>", self._bind_to_mousewheel)
         self.canvas.bind("<Leave>", self._unbind_from_mousewheel)
         self.canvas.bind("<<ThemeChanged>>", self._update_bg)
+        # Update background with inital values.
+        self._update_bg()
 
     # track changes to the canvas and frame width and sync them,
     # also updating the scrollbar
@@ -932,7 +935,7 @@ class ScrolledFrame(ttk.Frame):
         self.canvas.unbind_all("<Button-5>")
         self.canvas.unbind_all("<MouseWheel>")  # On Windows
 
-    def _update_bg(self, event):
+    def _update_bg(self, event=None):
         """
         Propagate the style of parent widget to canvas and interior widget.
         """
@@ -947,7 +950,7 @@ class ScrolledFrame(ttk.Frame):
         """
         super().configure(cnf, **kw)
         if 'style' in kw:
-            self._update_bg(None)
+            self._update_bg()
 
 
 class TemplateError(Exception):

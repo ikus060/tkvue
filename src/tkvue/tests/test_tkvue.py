@@ -163,19 +163,20 @@ class DataTest(unittest.TestCase):
         month.value = 10
         # The listener should be called
         self.assertEqual([1], listener)
-    
+
     def test_computed_raise_error(self):
         # Given a computed property that raise an error.
         obj = tkvue.state(None)
         days = tkvue.computed_property(lambda obj=obj: obj.value.test)
         # When getting computed property value
         # Then an error is raised
-        with self.assertRaises(ValueError):
+        with self.assertRaises(Exception):
             days.value
         # When adding computed property to context
         # Then an error is raised
-        with self.assertRaises(ValueError):
+        with self.assertRaises(Exception):
             tkvue._Context({'days': days})
+
 
 class CustomComponent(tkvue.Component):
     template = """
@@ -615,6 +616,17 @@ class ComponentTest(unittest.TestCase):
 
     def test_scrolled_frame(self):
         with new_dialog(DialogWithScrolledFrame) as dlg:
+            dlg.pump_events()
+            style = ttk.Style(dlg)
+            style.configure('white.TFrame', background='#ffffff')
+            dlg.scrolled_frame.configure(style='white.TFrame')
+            dlg.pump_events()
+            # Make sure the style is applied to the scrolled frame
+            self.assertEqual(dlg.scrolled_frame.cget('style'), 'white.TFrame')
+            # Make sure the background get applied to the inner canvas.
+            self.assertEqual(dlg.scrolled_frame.canvas.cget('background'), '#ffffff')
+            # Make sure the inner frame get updated too.
+            self.assertEqual(dlg.scrolled_frame.interior.cget('style'), 'white.TFrame')
             dlg.pump_events()
 
     @unittest.skipUnless(IS_LINUX, "fail randomly on Windows and MacOS due to race condition")
