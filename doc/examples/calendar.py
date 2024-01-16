@@ -126,7 +126,7 @@ class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue Test" geometry="900x720">
     <Frame style="default.TFrame" pack-fill="both" pack-expand="1" padding="10">
-        <Label text="Hello World !" style="H1.TLabel" pack-padx="25" pack-pady="25"/>
+        <Label text="Hello World !" style="h1.TLabel" pack-padx="25" pack-pady="25"/>
         <Calendar datevariable="{{ selected_date }}" validatecommand="{{_enabled_date}}"/>
         <Label text="{{ 'Selected date: %s' % selected_date}}" />
         <Frame style="default.TFrame" pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">

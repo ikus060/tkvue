@@ -25,7 +25,7 @@ class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue Test" geometry="450x200">
     <Frame style="default.TFrame" pack-fill="both" pack-expand="1" padding="10">
-        <Label text="Hello World !" style="H1.TLabel" pack-padx="25" pack-pady="25"/>
+        <Label text="Hello World !" style="h1.TLabel" pack-padx="25" pack-pady="25"/>
         <Frame style="default.TFrame" pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
             <Button style="default.TButton" text="Continue" pack-side="right" pack-padx="5"/>
             <Button style="default.TButton" text="Cancel" pack-side="right"/>
