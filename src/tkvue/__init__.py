@@ -485,7 +485,7 @@ def _configure(widget, key, value):
     """Stack all configuration if widget is not registered to minimize number of tk.call"""
     # If widget is registered, simply call configure.
     if getattr(widget, '_tkvue_register', False):
-        widget.configure(**{key: value})
+        widget.configure({key: value})
     else:
         # Otherwise, store the values
         if not getattr(widget, '_tkvue_configure', False):
@@ -884,8 +884,8 @@ class ScrolledFrame(ttk.Frame):
         self.canvas.bind("<Configure>", self._configure_canvas)
         self.canvas.bind("<Enter>", self._bind_to_mousewheel)
         self.canvas.bind("<Leave>", self._unbind_from_mousewheel)
-        self.canvas.bind("<<ThemeChanged>>", self._update_bg)
         # Update background with inital values.
+        self.bind("<<ThemeChanged>>", self._update_bg)
         self._update_bg()
 
     # track changes to the canvas and frame width and sync them,
@@ -936,21 +936,11 @@ class ScrolledFrame(ttk.Frame):
         self.canvas.unbind_all("<MouseWheel>")  # On Windows
 
     def _update_bg(self, event=None):
-        """
-        Propagate the style of parent widget to canvas and interior widget.
-        """
+        """Propagate the style of parent widget to canvas and interior widget."""
         style_name = self.cget('style') or 'TFrame'
-        bg = ttk.Style(master=self.master).lookup(style_name, "background")
+        bg = ttk.Style(master=self).lookup(style_name, "background")
         self.canvas.configure(bg=bg)
         self.interior.configure(style=style_name)
-
-    def configure(self, cnf=None, **kw):
-        """
-        Ovewrite configure to update style of canvas and interior.
-        """
-        super().configure(cnf, **kw)
-        if 'style' in kw:
-            self._update_bg()
 
 
 class TemplateError(Exception):

@@ -619,7 +619,7 @@ class ComponentTest(unittest.TestCase):
             dlg.pump_events()
             style = ttk.Style(dlg)
             style.configure('white.TFrame', background='#ffffff')
-            dlg.scrolled_frame.configure(style='white.TFrame')
+            dlg.scrolled_frame.configure({'style': 'white.TFrame'})
             dlg.pump_events()
             # Make sure the style is applied to the scrolled frame
             self.assertEqual(dlg.scrolled_frame.cget('style'), 'white.TFrame')
