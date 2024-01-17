@@ -21,7 +21,7 @@ import tkvue
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue Test">
-    <Frame pack-fill="both" pack-expand="1">
+    <Frame fill="both" expand="1">
         <label text="compound none" />
         <Label text="gastonf" image="{{icon_path}}" compound="none"/>
         <label text="" />

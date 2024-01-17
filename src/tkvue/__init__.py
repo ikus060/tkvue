@@ -513,8 +513,8 @@ def _configure_visible(widget, value):
     # Do nothing if the widget is not yet registered.
     if getattr(widget, '_tkvue_register', False):
         # Show / Hide widget
-        geo = getattr(widget, '_tkvue_geo', 'pack')
-        assert geo in ['pack', 'place', 'grid']
+        geo = getattr(widget, '_tkvue_geo', 'pack').split(',')[0]
+        assert geo in {'pack', 'place', 'grid'}, 'cannot determine proper geometry manager: ' + geo
         if value:
             # Check which geometry manager is used by this widget. Default to 'pack'
             attrs = getattr(widget, '_tkvue_geo_attrs', {})
@@ -525,26 +525,49 @@ def _configure_visible(widget, value):
 
 
 GEO_ATTRS = {
-    'pack': ('side', 'padx', 'pady', 'ipadx', 'ipady', 'fill', 'expand', 'anchor'),
-    'grid': ('column', 'columnspan', 'ipadx', 'ipady', 'padx', 'pady', 'row', 'rowspan', 'sticky'),
-    'place': ('x', 'y', 'relx', 'rely', 'anchor', 'width', 'height', 'relwidth', 'relheight', 'bordermode'),
+    'side': 'pack',
+    'fill': 'pack',
+    'expand': 'pack',
+    'anchor': 'pack,place',
+    'padx': 'pack,grid',
+    'pady': 'pack,grid',
+    'ipadx': 'pack,grid',
+    'ipady': 'pack,grid',
+    'column': 'grid',
+    'columnspan': 'grid',
+    'row': 'grid',
+    'rowspan': 'grid',
+    'sticky': 'grid',
+    'x': 'place',
+    'y': 'place',
+    'relx': 'place',
+    'rely': 'place',
+    'height': 'place',
+    'relwidth': 'place',
+    'relheight': 'place',
+    'bordermode': 'place',
 }
-for geo, keys in GEO_ATTRS.items():
-    for key in keys:
+for key, geo in GEO_ATTRS.items():
 
-        @attr("%s-%s" % (geo, key), tkinter.Widget)
-        def _configure_geo(widget, value, geo=geo, key=key):
-            # Check if another Geometry manager was used.
-            if getattr(widget, '_tkvue_geo', geo) != geo:
-                raise ValueError('widget can only use a single geometry manager: %s' % geo)
-            # Store the vlaue within the widget metadata
+    @attr(key, tkinter.Widget)
+    def _configure_geo(widget, value, key=key, geo=geo):
+        # Check if a conflicting Geometry manager was used.
+        cur_geo = getattr(widget, '_tkvue_geo', geo)
+        if cur_geo == geo or cur_geo in geo:
+            widget._tkvue_geo = cur_geo
+        elif geo in cur_geo.split(','):
             widget._tkvue_geo = geo
-            if getattr(widget, '_tkvue_geo_attrs', None) is None:
-                widget._tkvue_geo_attrs = {}
-            widget._tkvue_geo_attrs[key] = value
-            # If registered, call the geometry manager
-            if getattr(widget, '_tkvue_register', False):
-                getattr(widget, geo)(widget._tkvue_geo_attrs)
+        else:
+            raise ValueError('widget can only use a single geometry manager: %s' % cur_geo)
+        # Store the value within the widget metadata
+        if getattr(widget, '_tkvue_geo_attrs', None) is None:
+            widget._tkvue_geo_attrs = {}
+        widget._tkvue_geo_attrs[key] = value
+        # If registered, call the geometry manager
+        if getattr(widget, '_tkvue_register', False):
+            for g in cur_geo:
+                getattr(widget, g)(widget._tkvue_geo_attrs)
+                break
 
 
 for cfg in ['columnconfigure', 'rowconfigure']:

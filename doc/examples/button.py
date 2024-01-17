@@ -25,36 +25,36 @@ class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue Test">
 <label text="With TTK Widgets, you may need to create several styles to customize the appearance of the buttons." padding="10"/>
-    <Frame pack-fill="both" pack-expand="1" pack-side="left">
+    <Frame fill="both" expand="1" side="left">
         <label text="Default button" />
-        <Button text="Click Me" pack-pady="0 15"/>
+        <Button text="Click Me" pady="0 15"/>
 
         <label text="style=left.TButton" />
-        <Button text="Click Me" style="left.TButton" pack-pady="0 15"/>
+        <Button text="Click Me" style="left.TButton" pady="0 15"/>
 
         <label text="style=right.TButton" />
-        <Button text="Click Me" style="right.TButton" pack-pady="0 15"/>
+        <Button text="Click Me" style="right.TButton" pady="0 15"/>
 
         <label text="style=blue.TButton" />
-        <Button text="Click Me" style="blue.TButton" pack-pady="0 15"/>
+        <Button text="Click Me" style="blue.TButton" pady="0 15"/>
 
         <label text="style=blue.TButton compound=right" />
-        <Button text="Click Me" style="blue.TButton" image="{{icon_path}}" compound="right" pack-pady="0 15"/>
+        <Button text="Click Me" style="blue.TButton" image="{{icon_path}}" compound="right" pady="0 15"/>
 
     </Frame>
-    <Frame pack-fill="both" pack-expand="1" pack-side="left">
+    <Frame fill="both" expand="1" side="left">
         <label text="compound=none" />
-        <Button text="Click Me" image="{{icon_path}}" compound="none" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="none" pady="0 15"/>
         <label text="compound=bottom" />
-        <Button text="Click Me" image="{{icon_path}}" compound="bottom" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="bottom" pady="0 15"/>
         <label text="compound=top" />
-        <Button text="Click Me" image="{{icon_path}}" compound="top" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="top" pady="0 15"/>
         <label text="compound=left" />
-        <Button text="Click Me" image="{{icon_path}}" compound="left" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="left" pady="0 15"/>
         <label text="compound=right" />
-        <Button text="Click Me" image="{{icon_path}}" compound="right" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="right" pady="0 15"/>
         <label text="compound=center" />
-        <Button text="Click Me" image="{{icon_path}}" compound="center" pack-pady="0 15"/>
+        <Button text="Click Me" image="{{icon_path}}" compound="center" pady="0 15"/>
     </Frame>
 </TopLevel>
     """

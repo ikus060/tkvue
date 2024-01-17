@@ -19,7 +19,7 @@ import tkvue
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel geometry="322x261" title="TKVue Test" resizable="False False">
-    <Frame pack-fill="both" pack-expand="true" padding="10">
+    <Frame fill="both" expand="true" padding="10">
         <Label text="Window should not be resizable" />
     </Frame>
 </TopLevel>

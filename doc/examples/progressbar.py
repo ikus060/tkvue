@@ -22,9 +22,9 @@ import tkvue
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel geometry="250x250" title="TKVue Test">
-    <Frame pack-fill="both" pack-expand="true" padding="10">
-        <Progressbar orient="horizontal" mode="indeterminate" value="{{progress}}" pack-fill="x"/>
-        <Progressbar orient="horizontal" mode="determinate"  value="{{progress}}" pack-fill="x"/>
+    <Frame fill="both" expand="true" padding="10">
+        <Progressbar orient="horizontal" mode="indeterminate" value="{{progress}}" fill="x"/>
+        <Progressbar orient="horizontal" mode="determinate"  value="{{progress}}" fill="x"/>
     </Frame>
 </TopLevel>
     """

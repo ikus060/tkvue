@@ -43,7 +43,7 @@ class RootDialog(tkvue.Component):
     template = """
 <TopLevel geometry="450x450" title="TKVue Test">
     <Button text="Click Me" />
-    <Canvas pack-fill="both" pack-expand="1"  bg="white">
+    <Canvas fill="both" expand="1"  bg="white">
         <CanvasText text="Hello" anchor="center" moveto="50 50"/>
     </Canvas>
 </TopLevel>

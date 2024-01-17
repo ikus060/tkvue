@@ -20,13 +20,13 @@ import tkvue
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue Test">
-    <Frame pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
-        <Label text="Available values: " width="20" pack-side="left"/>
-        <ComboBox id="label" pack-side="left" pack-expand="1" values="{{myvalues}}" textvariable="{{selected_value}}" />
+    <Frame fill="both" expand="1" padx="10" pady="10">
+        <Label text="Available values: " width="20" side="left"/>
+        <ComboBox id="label" side="left" expand="1" values="{{myvalues}}" textvariable="{{selected_value}}" />
     </Frame>
-    <Frame pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
-        <Label text="Value selected: " width="20" pack-side="left"/>
-        <Label pack-side="left" pack-expand="1" text="{{selected_value}}" />
+    <Frame fill="both" expand="1" padx="10" pady="10">
+        <Label text="Value selected: " width="20" side="left"/>
+        <Label side="left" expand="1" text="{{selected_value}}" />
     </Frame>
 </TopLevel>
     """

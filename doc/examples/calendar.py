@@ -28,13 +28,13 @@ tkvue.configure_tk(theme="clam")
 class Calendar(tkvue.Component):
     template = """
 <Frame style="default.TFrame" columnconfigure-weight="1 1 1 1 1 1 1">
-    <Frame style="default.TFrame" grid-columnspan="7" >
-        <Button text="<" command="{{_prev}}" pack-side="left" width="3"/>
-        <Button text=">" command="{{_next}}" pack-side="right" width="3"/>
-        <Label text="{{ title }}" pack-side="top" pack-padx="10 10" pack-fill="both" pack-expand="1" anchor="center"/>
+    <Frame style="default.TFrame" columnspan="7" >
+        <Button text="<" command="{{_prev}}" side="left" width="3"/>
+        <Button text=">" command="{{_next}}" side="right" width="3"/>
+        <Label text="{{ title }}" side="top" padx="10 10" fill="both" expand="1" anchor="center"/>
     </Frame>
-    <Label for="{{d in weekdays}}" text="{{ d }}" grid-column="{{ loop_idx }}" grid-row="2"/>
-    <Button for="{{d in dates}}" text="{{ d[2] }}" grid-column="{{ loop_idx % 7 }}" grid-row="{{ 2 + int(loop_idx / 7) }}" command="{{_select(d)}}"/>
+    <Label for="{{d in weekdays}}" text="{{ d }}" column="{{ loop_idx }}" row="2"/>
+    <Button for="{{d in dates}}" text="{{ d[2] }}" column="{{ loop_idx % 7 }}" row="{{ 2 + int(loop_idx / 7) }}" command="{{_select(d)}}"/>
 
 </Frame>
     """
@@ -125,13 +125,13 @@ class Calendar(tkvue.Component):
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue Test" geometry="900x720">
-    <Frame style="default.TFrame" pack-fill="both" pack-expand="1" padding="10">
-        <Label text="Hello World !" style="h1.TLabel" pack-padx="25" pack-pady="25"/>
+    <Frame style="default.TFrame" fill="both" expand="1" padding="10">
+        <Label text="Hello World !" style="h1.TLabel" padx="25" pady="25"/>
         <Calendar datevariable="{{ selected_date }}" validatecommand="{{_enabled_date}}"/>
         <Label text="{{ 'Selected date: %s' % selected_date}}" />
-        <Frame style="default.TFrame" pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
-            <Button style="default.TButton" text="Continue" pack-side="right" pack-padx="5"/>
-            <Button style="default.TButton" text="Cancel" pack-side="right"/>
+        <Frame style="default.TFrame" fill="both" expand="1" padx="10" pady="10">
+            <Button style="default.TButton" text="Continue" side="right" padx="5"/>
+            <Button style="default.TButton" text="Cancel" side="right"/>
         </Frame>
     </Frame>
 </TopLevel>
