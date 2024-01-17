@@ -400,6 +400,15 @@ class DialogWithLoopInLoop(tkvue.Component):
     items = tkvue.state([])
 
 
+class DialogWithCombobox(tkvue.Component):
+    template = """
+    <TopLevel>
+        <Combobox id="combobox" values="{{values}}"/>
+    </TopLevel>
+    """
+    values = tkvue.state(None)
+
+
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
 class ComponentTest(unittest.TestCase):
     def test_open_close(self):
@@ -767,3 +776,19 @@ class ComponentTest(unittest.TestCase):
             self.assertEqual(2, len(dlg.winfo_children()))
             self.assertEqual(6, len(dlg.winfo_children()[0].winfo_children()))
             self.assertEqual(6, len(dlg.winfo_children()[1].winfo_children()))
+
+    def test_combobox_values(self):
+        # Given a dialog with a combobox
+        with new_dialog(DialogWithCombobox) as dlg:
+            # When updating the items
+            dlg.pump_events()
+            # list is supported
+            values = ["some text", "some value"]
+            dlg.values.value = values
+            dlg.pump_events()
+            self.assertEqual(dlg.combobox.cget('values'), ('some text', 'some value'))
+            # Iterable is supported
+            value_map = {1: "new text", 2: "new value"}
+            dlg.values.value = value_map.values()
+            dlg.pump_events()
+            self.assertEqual(dlg.combobox.cget('values'), ('new text', 'new value'))

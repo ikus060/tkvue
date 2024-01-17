@@ -6,6 +6,7 @@ import contextlib
 import functools
 import logging
 import os
+import sys
 import threading
 import tkinter
 from html.parser import HTMLParser
@@ -680,6 +681,14 @@ def _configure_theme(widget, value):
     ttk.Style(master=widget).theme_use(value)
 
 
+@attr('values', ttk.Combobox)
+def _configure_values(widget, value):
+    """Support itterable in addition to list and tuple."""
+    if hasattr(value, '__iter__'):
+        value = list(value)
+    widget.configure({'values': value})
+
+
 def _real_widget(widget):
     """
     Return Component's inner widget or the widget itself.
@@ -744,6 +753,8 @@ class ToolTip(ttk.Frame):
             print("* Error performing wm_overrideredirect in showtip *", e)
         self.tipwindow.wm_geometry("+%d+%d" % (x, y))
         self.tipwindow.wm_attributes("-topmost", 1)
+        if sys.platform.startswith('linux'):
+            self.tipwindow.wm_attributes("-type", "tooltip")
         label = ttk.Label(
             self.tipwindow,
             text=self.text,
