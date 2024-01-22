@@ -20,19 +20,19 @@ import tkvue
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel geometry="320x261" title="Modal" >
-    <Frame pack-side="top" pack-fill="both" pack-expand="1" padding="10 10">
-        <Frame pack-fill="x" padding="0 3">
-            <Label text="User name:" pack-side="left" width="15"/>
-            <Entry textvariable="{{username}}" pack-fill="x" pack-side="left" />
+    <Frame pack="side:top; fill:both;" padding="10 10">
+        <Frame pack="fill:x" padding="0 3">
+            <Label text="User name:" pack="side:left" width="15"/>
+            <Entry textvariable="{{username}}" pack="fill:x; side:left;" />
         </Frame>
-        <Frame pack-fill="x" padding="0 3">
-            <Label text="Password:" pack-side="left" width="15" />
-            <Entry textvariable="{{password}}" show="•" pack-fill="x" pack-side="left" />
+        <Frame pack="fill:x" padding="0 3">
+            <Label text="Password:" pack="side:left" width="15" />
+            <Entry textvariable="{{password}}" show="•" pack="fill:x; side:left;" />
         </Frame>
         <Label text="is valid" visible="{{valid}}" />
-        <Frame pack-side="bottom" pack-anchor="se" padding="0 3">
-            <Button text="OK" pack-side="left" width="10" pack-fill="both" pack-padx="0 8" state="{{'disabled' if not valid else '!disabled'}}" />
-            <Button text="Cancel" pack-side="left" width="10" pack-fill="both"/>
+        <Frame pack="side:bottom; anchor:se;" padding="0 3">
+            <Button text="OK" pack="side:left" width="10" pack="fill:both; padx:0 8;" state="{{'disabled' if not valid else '!disabled'}}" />
+            <Button text="Cancel" pack="side:left" width="10" pack="fill:both"/>
         </Frame>
     </Frame>
 </TopLevel>

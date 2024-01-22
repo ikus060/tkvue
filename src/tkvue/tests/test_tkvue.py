@@ -193,30 +193,30 @@ class CustomComponent(tkvue.Component):
 class Dialog(tkvue.Component):
     template = """
     <TopLevel geometry="500x500" title="My Dialog">
-        <Frame pack-fill="x" pack-expand="1">
+        <Frame pack="fill:x; expand:1">
             <!-- Single and dual binding -->
             <Entry id="entry" textvariable="{{text_value}}" />
             <label id="label" text="{{text_value}}" />
         </Frame>
-        <Frame pack-fill="x" pack-expand="1">
+        <Frame pack="fill:x; expand:1">
             <Button id="button" visible="{{button_visible}}" text="Visible" />
         </Frame>
-        <Frame id="people" pack-fill="x" pack-expand="1">
+        <Frame id="people" pack="fill:x; expand:1">
             <Label for="{{i in names}}" text="{{i}}" />
         </Frame>
         <label id="count1_label" text="{{count1}}" />
-        <Frame pack-fill="x" pack-expand="1">
+        <Frame pack="fill:x; expand:1">
             <Radiobutton id="blue" variable="{{selected_color}}" value="blue" text="blue"/>
             <Radiobutton id="red" variable="{{selected_color}}" value="red" text="red"/>
             <Radiobutton id="green" variable="{{selected_color}}" value="green" text="green"/>
             <Combobox id="combo" textvariable="{{selected_color}}" values="blue red green" />
         </Frame>
-        <Frame pack-fill="x" pack-expand="1">
+        <Frame pack="fill:x; expand:1">
             <Radiobutton id="one" variable="{{selected_number}}" value="1" text="1"/>
             <Radiobutton id="two" variable="{{selected_number}}" value="2" text="2"/>
             <Radiobutton id="three" variable="{{selected_number}}" value="3" text="3"/>
         </Frame>
-        <Frame pack-fill="x" pack-expand="1">
+        <Frame pack="fill:x; expand:1">
             <Checkbutton id="checkbutton" text="foo" selected="{{checkbutton_selected}}" command="{{checkbutton_invoke}}"/>
             <Checkbutton id="checkbutton2" text="leader" variable="{{checkbutton_selected}}"/>
             <Checkbutton id="checkbutton3" text="follower" selected="{{checkbutton_selected}}" command="{{funcation_call_with_args('arg1')}}"/>
@@ -294,9 +294,9 @@ class DialogWithCustomComponentLoop(tkvue.Component):
 class DialogWithScrolledFrame(tkvue.Component):
     template = """
     <TopLevel geometry="500x500">
-        <ScrolledFrame id="scrolled_frame" pack-fill="both" pack-expand="1">
-            <Frame for="{{item in range(1,10)}}" pack-fill="x"  pack-expand="1">
-                <Label pack-fill="x" pack-expand="1" text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. " wrap="1"/>
+        <ScrolledFrame id="scrolled_frame" pack="fill:both; expand:1;">
+            <Frame for="{{item in range(1,10)}}" pack="fill:x"  pack="expand:1">
+                <Label pack="fill:x; expand:1" text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. " wrap="1"/>
             </Frame>
         </ScrolledFrame>
     </TopLevel>
@@ -344,8 +344,8 @@ class DialogWithTheme(tkvue.Component):
 class DialogWithPack(tkvue.Component):
     template = """
     <TopLevel>
-        <Button id="btn" text="Push button" pack-side="left" pack-padx="5" pack-pady="10" pack-ipadx="2" pack-ipady="2" pack-fill="x" pack-expand="y" pack-anchor="nw"/>
-        <CustomComponent pack-side="left" />
+        <Button id="btn" text="Push button" pack="side:left; padx:5; pady:10; ipadx:2; ipady:2; expand:y; anchor:nw;"/>
+        <CustomComponent pack="side:left" />
     </TopLevel>
     """
 
@@ -353,8 +353,8 @@ class DialogWithPack(tkvue.Component):
 class DialogWithPlace(tkvue.Component):
     template = """
     <TopLevel>
-        <Button id="btn" text="Push button" place-x="20" place-y="10" place-width="20" place-height="20"/>
-        <CustomComponent place-x="40" place-y="40" />
+        <Button id="btn" text="Push button" place="x:20; y:10; width:20; height:20;"/>
+        <CustomComponent place="x:40; y:40;" />
     </TopLevel>
     """
 
@@ -362,12 +362,12 @@ class DialogWithPlace(tkvue.Component):
 class DialogWithGrid(tkvue.Component):
     template = """
     <TopLevel geometry="322x261">
-        <Frame pack-fill="both" pack-expand="1" columnconfigure-weight="1 1">
-            <Button id="btn1" text="grid-sticky=we" grid-column=0 grid-row=0 grid-sticky="we"/>
-            <Button id="btn2" text="b" grid-column=1 grid-row=0 />
-            <Button id="btn3" text="c" grid-column=0 grid-row=1 />
-            <Button id="btn4" text="d" grid-column=1 grid-row=1 />
-            <CustomComponent grid-column=0 grid-row=2 />
+        <Frame pack="fill:both; expand:1;" columnconfigure-weight="1 1">
+            <Button id="btn1" text="grid=sticky:we" grid="column:0; row:0; sticky:we;"/>
+            <Button id="btn2" text="b" grid="column:1; row:0;" />
+            <Button id="btn3" text="c" grid="column:0; row:1;"  />
+            <Button id="btn4" text="d" grid="column:1; row:1;"  />
+            <CustomComponent  grid="column:0; row:2; columnspan:2" />
         </Frame>
     </TopLevel>
     """
@@ -393,7 +393,7 @@ class DialogWithLoopInLoop(tkvue.Component):
     template = """
     <TopLevel style="default.TFrame">
         <LabelFrame for="{{item in items}}" text="{{ '%s / %s' % (loop_idx, len(item)) }}">
-            <Label for="{{char in item}}" text="{{ '%s: %s' % (loop_idx, char) }}" pack-padx="5"/>
+            <Label for="{{char in item}}" text="{{ '%s: %s' % (loop_idx, char) }}" pack="padx:5"/>
         </LabelFrame>
     </TopLevel>
     """

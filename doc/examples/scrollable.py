@@ -19,13 +19,13 @@ import tkvue
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel geometry="450x450" title="TKVue Test">
-    <Frame pack-fill="both" pack-expand="true" padding="10">
+    <Frame pack="fill:both; expand:true;" padding=10>
         <Label text="Static text on top of scrollable" />
-        <ScrolledFrame pack-fill="both" pack-expand="1" pack-side="left">
-            <Label pack-fill="x" pack-expand="1" for="{{i in range(1,100)}}" text="{{ 'left %s' % i }}" />
+        <ScrolledFrame pack="fill:both; expand:1; side:left">
+            <Label pack="fill:x; expand:1" for="{{i in range(1,100)}}" text="{{ 'left %s' % i }}" />
         </ScrolledFrame>
-        <ScrolledFrame pack-fill="both" pack-expand="1" pack-side="right">
-            <Label pack-fill="x" pack-expand="1" for="{{i in range(1,5)}}" text="{{ 'right %s' % i }}" />
+        <ScrolledFrame pack="fill:both; expand:1;">
+            <Label pack="fill:x; expand:1" for="{{i in range(1,5)}}" text="{{ 'right %s' % i }}" />
         </ScrolledFrame>
     </Frame>
 </TopLevel>

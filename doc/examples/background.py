@@ -21,8 +21,8 @@ import tkvue
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel geometry="450x450" title="TKVue Test">
-    <Label image="{{ bg }}" place-x="0" place-y="0" place-relwidth="1" place-relheight="1" compound="top"/>
-    <Button text="Click Me" pack-expand="1" />
+    <Label image="{{ bg }}" place="x:0; y:0; relwidth:1; relheight:1;" compound="top"/>
+    <Button text="Click Me" pack="expand:1" />
 </TopLevel>
     """
     bg = tkvue.state(os.path.normpath(os.path.join(__file__, '../bg.png')))

@@ -24,11 +24,11 @@ tkvue.configure_tk(theme="clam")
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue Test" geometry="450x200">
-    <Frame style="default.TFrame" pack-fill="both" pack-expand="1" padding="10">
-        <Label text="Hello World !" style="h1.TLabel" pack-padx="25" pack-pady="25"/>
-        <Frame style="default.TFrame" pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
-            <Button style="default.TButton" text="Continue" pack-side="right" pack-padx="5"/>
-            <Button style="default.TButton" text="Cancel" pack-side="right"/>
+    <Frame style="default.TFrame" pack="fill:both; expand:1;" padding="10">
+        <Label text="Hello World !" style="h1.TLabel" pack="padx:25; pady:25;"/>
+        <Frame style="default.TFrame" pack="fill:both; expand:1; padx:10; pady:10">
+            <Button style="default.TButton" text="Continue" pack="side:right; padx:5;"/>
+            <Button style="default.TButton" text="Cancel" pack="side:right"/>
         </Frame>
     </Frame>
 </TopLevel>
@@ -37,7 +37,7 @@ class RootDialog(tkvue.Component):
     def __init__(self, master=None):
         super().__init__(master)
         s = ttk.Style(master=self.root)
-        s.configure('H1.TLabel', font=['Lato', '-60'], background='#ffffff')
+        s.configure('h1.TLabel', font=['Lato', '-60'], background='#ffffff')
         s.configure('default.TFrame', background='#ffffff')
         s.configure(
             'default.TButton',

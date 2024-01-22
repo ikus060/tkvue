@@ -21,10 +21,10 @@ import tkvue
 
 class ErrorFrame(tkvue.Component):
     template = """
-<Frame style="error.TFrame" pack-fill="x" pack-expand="1" padding="4 1 1 1">
-    <Frame style="default.TFrame" pack-fill="x" pack-expand="1" padding="10">
-        <Label style="default.TLabel" text="{{text}}" pack-side="left"/>
-        <Label style="default.TLabel" text="{{subtext}}" pack-side="left" />
+<Frame style="error.TFrame" pack="fill:x; expand:1" padding="4 1 1 1">
+    <Frame style="default.TFrame" pack="fill:x; expand:1" padding="10">
+        <Label style="default.TLabel" text="{{text}}" pack="side:left"/>
+        <Label style="default.TLabel" text="{{subtext}}" pack="side:left" />
     </Frame>
 </Frame>
 """
@@ -43,7 +43,7 @@ class ErrorFrame(tkvue.Component):
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue Test" geometry="450x350" >
-    <Frame style="default.TFrame" pack-fill="both" pack-expand="1" padding="25">
+    <Frame style="default.TFrame" pack="fill:both; expand:1;" padding="25">
 
         <ErrorFrame subtext="This is the first error message."/>
 

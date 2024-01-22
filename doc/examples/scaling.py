@@ -28,8 +28,8 @@ class RootDialog(tkvue.Component):
         <Spinbox textvariable="{{ scaling }}" />
     </Frame>
     <Frame id="preview">
-        <Label text="Configuration" style="pixel.TLabel" pack-side="left"/>
-        <Label text="Configuration" style="point.TLabel" pack-side="left"/>
+        <Label text="Configuration" style="pixel.TLabel" pack="side:left"/>
+        <Label text="Configuration" style="point.TLabel" pack="side:left"/>
     </Frame>
 </TopLevel>
     """

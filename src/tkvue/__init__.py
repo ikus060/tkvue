@@ -513,14 +513,13 @@ def _configure_visible(widget, value):
     # Do nothing if the widget is not yet registered.
     if getattr(widget, '_tkvue_register', False):
         # Show / Hide widget
-        geo = getattr(widget, '_tkvue_geo', 'pack')
-        assert geo in ['pack', 'place', 'grid']
+        cur_geo = getattr(widget, '_tkvue_geo', 'pack')
         if value:
             # Check which geometry manager is used by this widget. Default to 'pack'
             attrs = getattr(widget, '_tkvue_geo_attrs', {})
-            getattr(widget, geo)(attrs)
+            getattr(widget, cur_geo)(attrs)
         else:
-            forget_func = getattr(widget, '%s_forget' % geo)
+            forget_func = getattr(widget, '%s_forget' % cur_geo)
             forget_func()
 
 
@@ -530,21 +529,43 @@ GEO_ATTRS = {
     'place': ('x', 'y', 'relx', 'rely', 'anchor', 'width', 'height', 'relwidth', 'relheight', 'bordermode'),
 }
 for geo, keys in GEO_ATTRS.items():
-    for key in keys:
 
-        @attr("%s-%s" % (geo, key), tkinter.Widget)
-        def _configure_geo(widget, value, geo=geo, key=key):
-            # Check if another Geometry manager was used.
-            if getattr(widget, '_tkvue_geo', geo) != geo:
-                raise ValueError('widget can only use a single geometry manager: %s' % geo)
-            # Store the vlaue within the widget metadata
-            widget._tkvue_geo = geo
-            if getattr(widget, '_tkvue_geo_attrs', None) is None:
-                widget._tkvue_geo_attrs = {}
-            widget._tkvue_geo_attrs[key] = value
-            # If registered, call the geometry manager
-            if getattr(widget, '_tkvue_register', False):
-                getattr(widget, geo)(widget._tkvue_geo_attrs)
+    @attr(geo, tkinter.Widget)
+    def _configure_geo(widget, value, geo=geo, keys=keys):
+        # Check if a conflicting Geometry manager was used.
+        cur_geo = getattr(widget, '_tkvue_geo', geo)
+        if cur_geo != geo:
+            raise ValueError(
+                'widget is currently configured with %s geometry manager, conflict with: %s = %s'
+                % (cur_geo, geo, value)
+            )
+        widget._tkvue_geo = geo
+        # Support CSS style key:value; key:value;
+        if isinstance(value, str):
+            new_value = dict()
+            for pair in value.split(';'):
+                if not pair.strip():
+                    continue
+                if ':' not in pair:
+                    raise ValueError('expecting key:value pair, got: %s' % pair)
+                key, value = pair.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                if key not in keys:
+                    raise ValueError('unexpected %s geometry manager attribute: %s' % (geo, key))
+                new_value[key] = value
+            value = new_value
+        elif isinstance(value, dict):
+            # Validate attribute
+            for key in value.keys():
+                if key not in keys:
+                    raise ValueError('unexpected %s geometry manager attribute: %s' % (geo, key))
+        else:
+            raise ValueError('unsupported geometry manager value type: %s' % value)
+        widget._tkvue_geo_attrs = value
+        # If registered, call the geometry manager
+        if getattr(widget, '_tkvue_register', False):
+            getattr(widget, cur_geo)(widget._tkvue_geo_attrs)
 
 
 for cfg in ['columnconfigure', 'rowconfigure']:

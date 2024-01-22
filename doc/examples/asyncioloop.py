@@ -25,21 +25,20 @@ import tkvue
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel geometry="450x450" title="TKVue Test">
-    <Frame pack-fill="both" pack-expand="true" padding="10">
+    <Frame pack="fill:both; expand:true" padding="10">
         <Checkbutton text="Show animation" variable="{{show}}" />
         <Label image="{{icon_path}}" visible="{{show}}" background="#ffffff" />
     </Frame>
     <Frame>
-        <Button id="check_latest_version_button" text="Check now" command="{{_check_latest_version}}" pack-side="right"
-                pack-pady="5" />
+        <Button id="check_latest_version_button" text="Check now" command="{{_check_latest_version}}" pack="side:right; pady:5"/>
         <Label text="Checking for updates..." compound="left" visible="{{checking_for_update}}"
-            anchor="e" pack-fill="x" />
+            anchor="e" pack="fill:x" />
         <Label text="Current version is up-to-date" style="success.TLabel" compound="left"
-            visible="{{is_latest is True}}" anchor="e" pack-fill="x" />
+            visible="{{is_latest is True}}" anchor="e" pack="fill:x" />
         <Label text="Update available" style="info.TLabel" compound="left"
-            visible="{{is_latest is False}}" anchor="e" pack-fill="x" />
+            visible="{{is_latest is False}}" anchor="e" pack="fill: x" />
         <Label text="Cannot check for updates. Try again later." style="danger.TLabel" compound="left"
-            visible="{{check_latest_version_error is not None}}" anchor="e" pack-fill="x">
+            visible="{{check_latest_version_error is not None}}" anchor="e" pack="fill:x">
             <Tooltip text="{{check_latest_version_error}}" width="50" />
         </Label>
     </Frame>

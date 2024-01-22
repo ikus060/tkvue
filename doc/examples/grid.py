@@ -25,11 +25,11 @@ class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue example" geometry="500x500">
     <label text="Using grid geometry manager it's possible to create complex interface" padding="10"/>
-    <Frame pack-fill="both" pack-expand="1" columnconfigure-weight="1 1" rowconfigure-weight="1 1">
-        <Button text="grid-sticky=we" grid-column=0 grid-row=0 grid-sticky="we"/>
-        <Button text="grid-sticky=nw" grid-column=1 grid-row=0 grid-sticky="nw"/>
-        <Button text="c" grid-column=0 grid-row=1 />
-        <Button text="grid-sticky=nsew" grid-column=1 grid-row=1 grid-sticky="nsew"/>
+    <Frame pack="fill:both; expand:1;" columnconfigure-weight="1 1" rowconfigure-weight="1 1">
+        <Button text="sticky=we" grid="column:0; row:0; sticky:we;"/>
+        <Button text="sticky=nw" grid="column:1; row:0; sticky:nw;"/>
+        <Button text="c" grid="column:0; row:1;" />
+        <Button text="sticky=nsew" grid="column:1; row:1; sticky:nsew;"/>
     </Frame>
 </TopLevel>
     """

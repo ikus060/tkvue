@@ -21,7 +21,7 @@ import tkvue
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel geometry="350x250" title="TKVue Test">
-    <Frame pack-fill="both" pack-expand="true" padding="10">
+    <Frame pack="fill:both; expand:true;" padding=10>
         <Label text="Label with tooltip">
             <Tooltip text="Tooltip text for label" />
         </Label>

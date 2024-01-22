@@ -20,15 +20,15 @@ import tkvue
 class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue Test" geometry="{{ '%sx%s' % (win_width, win_height) }}" >
-    <Frame pack-fill="both" pack-expand="1" pack-padx="10" pack-pady="10">
-        <Frame pack-fill="x" padding="0 3">
-            <Label text="Height:" pack-side="left" width="10"/>
-            <Scale variable="{{win_height}}" from="100" to="800" pack-fill="x" pack-side="left" />
+    <Frame pack="fill:both; expand:1; padx:10; pady:10">
+        <Frame pack="fill:x" padding="0 3">
+            <Label text="Height:" pack="side:left" width="10"/>
+            <Scale variable="{{win_height}}" from="100" to="800" pack="fill:x; side:left;" />
         </Frame>
 
-        <Frame pack-fill="x" padding="0 3">
-            <Label text="Width:" pack-side="left" width="10" />
-            <Scale variable="{{win_width}}" from="200" to="800" pack-fill="x" pack-side="left" />
+        <Frame pack="fill:x" padding="0 3">
+            <Label text="Width:" pack="side:left" width="10" />
+            <Scale variable="{{win_width}}" from="200" to="800" pack="fill:x; side:left;" />
         </Frame>
     </Frame>
 </TopLevel>

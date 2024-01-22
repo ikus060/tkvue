@@ -26,12 +26,8 @@ class CanvasItem:
         self._canvas = master
         self._item = self._canvas.create_text(0, 0)
 
-    def configure(self, **kwargs):
-        moveto = kwargs.pop('moveto', False)
-        if moveto:
-            self._canvas.moveto(self._item, *moveto.split(' '))
-        else:
-            self._canvas.itemconfigure(self._item, **kwargs)
+    def configure(self, cnf, **kw):
+        self._canvas.itemconfigure(self._item, cnf, **kw)
 
 
 @tkvue.attr('moveto', CanvasItem)
@@ -43,7 +39,7 @@ class RootDialog(tkvue.Component):
     template = """
 <TopLevel geometry="450x450" title="TKVue Test">
     <Button text="Click Me" />
-    <Canvas pack-fill="both" pack-expand="1"  bg="white">
+    <Canvas pack="fill:both; expand:1" bg="white">
         <CanvasText text="Hello" anchor="center" moveto="50 50"/>
     </Canvas>
 </TopLevel>

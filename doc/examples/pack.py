@@ -24,27 +24,27 @@ class RootDialog(tkvue.Component):
     template = """
 <TopLevel title="TKVue example" geometry="500x500">
     <label text="Using pack geometry manager it's possible to control widgets position and size" padding="10"/>
-    <Frame pack-fill="x">
+    <Frame pack="fill:x">
         <label text="Fixed size using width=" />
-        <Button text="width=45" style="left.TButton" pack-pady="0 15" width="45"/>
+        <Button text="width=45" style="left.TButton" pack="pady:0 15" width="45"/>
     </Frame>
 
-    <Frame pack-fill="x" >
+    <Frame pack="fill:x" >
         <label text="Stacked on the left" />
-        <Button text="pack-side=left" pack-pady="0 15" pack-padx="0 5" pack-side="left"/>
-        <Button text="pack-side=left" pack-pady="0 15" pack-padx="0 5" pack-side="left"/>
-        <Button text="pack-side=left" pack-pady="0 15" pack-padx="0 5" pack-side="left"/>
+        <Button text="pack=side:left" pack="pady:0 15; padx: 0 5; side:left"/>
+        <Button text="pack=side:left" pack="pady:0 15; padx: 0 5; side:left"/>
+        <Button text="pack=side:left" pack="pady:0 15; padx: 0 5; side:left"/>
     </Frame>
 
-    <Frame pack-fill="both" pack-expand="1">
+    <Frame pack="fill:both; expand:1;">
         <label text="Take all vertical space" />
-        <Button text="pack-fill=x" pack-pady="0 15" pack-fill="x"/>
+        <Button text="pack=fill:x" pack="pady:0 15; fill:x;"/>
 
         <label text="Take all horizontal space" />
-        <Button text="pack-fill=y pack-expand=1" pack-pady="0 15" pack-fill="y"  pack-expand="1"/>
+        <Button text="pack=fill; expand:1" pack="pady:0 15; fill:y;"  pack="expand:1"/>
 
         <label text="Take all vertical & horizontal space" />
-        <Button text="pack-fill=both pack-expand=1" pack-pady="0 15" pack-fill="both"  pack-expand="1"/>
+        <Button text="pack=fill:both; expand:1" pack="pady:0 15; fill:both;"  pack="expand:1"/>
 
     </Frame>
 </TopLevel>
