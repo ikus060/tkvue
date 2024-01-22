@@ -74,6 +74,18 @@ class DataTest(unittest.TestCase):
         sum = tkvue.computed_property(lambda: var1.value + var2.value)
         self.assertEqual(sum.value, 3)
 
+    def test_set_computed(self):
+        var1 = tkvue.state(1)
+        var2 = tkvue.state(2)
+        # Create getter setter computed property
+        sum = tkvue.computed_property(
+            lambda: var1.value + var2.value, lambda value: setattr(var1, 'value', value - var2.value)
+        )
+        self.assertEqual(sum.value, 3)
+        sum.value = 8
+        self.assertEqual(sum.value, 8)
+        self.assertEqual(var1.value, 6)
+
     def test_watch_with_variable(self):
         listener = []
         var1 = tkvue.state("foo")
@@ -407,6 +419,29 @@ class DialogWithCombobox(tkvue.Component):
     </TopLevel>
     """
     values = tkvue.state(None)
+
+
+class DialogWithComputedProperty(tkvue.Component):
+    template = """
+    <TopLevel>
+        <Combobox id="combobox" values="{{ choices.values() }}" textvariable="{{ weekday_text }}"/>
+    </TopLevel>
+    """
+    choices = tkvue.state(
+        {0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Satursday'}
+    )
+    weekday = tkvue.state(3)
+
+    @tkvue.computed_property
+    def weekday_text(self):
+        return self.choices.value.get(self.weekday.value)
+
+    @weekday_text.setter
+    def weekday_text(self, value):
+        for idx, text in self.choices.value.items():
+            if text == value:
+                self.weekday.value = idx
+                return
 
 
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
@@ -792,3 +827,23 @@ class ComponentTest(unittest.TestCase):
             dlg.values.value = value_map.values()
             dlg.pump_events()
             self.assertEqual(dlg.combobox.cget('values'), ('new text', 'new value'))
+
+    def test_computed_property_setter(self):
+        # Given a dialog with a combobox
+        with new_dialog(DialogWithComputedProperty) as dlg:
+            dlg.pump_events()
+            # All variable are in sync
+            self.assertEqual(dlg.weekday.value, 3)
+            self.assertEqual(dlg.weekday_text.value, 'Wednesday')
+            # When user select an item
+            dlg.combobox.set('Monday')
+            dlg.pump_events()
+            # Then variable get updated
+            self.assertEqual(dlg.weekday.value, 1)
+            self.assertEqual(dlg.weekday_text.value, 'Monday')
+            # When updating weekday
+            dlg.weekday.value = 5
+            dlg.pump_events()
+            # Then combobox get updated
+            self.assertEqual(dlg.weekday_text.value, 'Friday')
+            self.assertEqual(dlg.combobox.get(), 'Friday')

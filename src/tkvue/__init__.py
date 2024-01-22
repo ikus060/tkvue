@@ -219,9 +219,11 @@ class computed_property(Observable):
 
     _tkvue_expose = True
 
-    def __init__(self, func) -> None:
-        assert callable(func), 'computed_property required a function'
-        self._func = func
+    def __init__(self, fget, fset=None) -> None:
+        assert callable(fget), 'computed_property expect a function'
+        assert fset is None or callable(fset), 'fset expect a function'
+        self.fget = fget
+        self.fset = fset
 
     def __set_name__(self, owner, name):
         self._name = name
@@ -229,8 +231,9 @@ class computed_property(Observable):
     def __get__(self, instance, owner):
         if instance is None:
             return self
-        func = functools.partial(self._func, instance)
-        return_instance = computed_property(func)
+        fget = functools.partial(self.fget, instance)
+        fset = functools.partial(self.fset, instance) if self.fset else None
+        return_instance = computed_property(fget, fset)
         instance.__dict__[self._name] = return_instance
         return return_instance
 
@@ -249,14 +252,22 @@ class computed_property(Observable):
         # Compute new value
         with self.track_dependencies():
             try:
-                return_value = self._func()
+                return_value = self.fget()
             except Exception:
                 raise ValueError(
-                    'error during evaluation of computed_property: %s' % getattr(self._func, '__expr__', self._func)
+                    'error during evaluation of computed_property: %s' % getattr(self.fget, '__expr__', self.fget)
                 )
         self._dirty = False
         self._value = return_value
         return return_value
+
+    @value.setter
+    def value(self, value):
+        assert self.fset is not None
+        try:
+            self.fset(value)
+        except Exception:
+            raise ValueError('error setting computed_property with new value: %s' % value)
 
     def _dependency_change(self, unused_new_value):
         """When our dependencies get updated, make our self dirty and notify our watchers."""
@@ -265,6 +276,10 @@ class computed_property(Observable):
         if getattr(self, '_subscribers', False):
             new_value = self.value
             self._notify(new_value)
+
+    def setter(self, fset):
+        """Decorator to provide a setter"""
+        return computed_property(self.fget, fset)
 
 
 class state(Observable):
