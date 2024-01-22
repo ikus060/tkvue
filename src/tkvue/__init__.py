@@ -251,7 +251,7 @@ class computed_property(Observable):
             try:
                 return_value = self._func()
             except Exception:
-                raise Exception(
+                raise ValueError(
                     'error during evaluation of computed_property: %s' % getattr(self._func, '__expr__', self._func)
                 )
         self._dirty = False
@@ -704,8 +704,8 @@ def _configure_theme(widget, value):
 
 @attr('values', ttk.Combobox)
 def _configure_values(widget, value):
-    """Support itterable in addition to list and tuple."""
-    if hasattr(value, '__iter__'):
+    """Support itterable (like generator) in addition to list and tuple."""
+    if not isinstance(value, str) and hasattr(value, '__iter__'):
         value = list(value)
     widget.configure({'values': value})
 
