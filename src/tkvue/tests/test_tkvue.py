@@ -444,6 +444,15 @@ class DialogWithComputedProperty(tkvue.Component):
                 return
 
 
+class DialogWithTranslation(tkvue.Component):
+    template = """
+    <TopLevel>
+        <Label id="my_label" text="{{ _('Create') if create else _('Save') }}" />
+    </TopLevel>
+    """
+    create = tkvue.state(1)
+
+
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
 class ComponentTest(unittest.TestCase):
     def test_open_close(self):
@@ -827,6 +836,17 @@ class ComponentTest(unittest.TestCase):
             dlg.values.value = value_map.values()
             dlg.pump_events()
             self.assertEqual(dlg.combobox.cget('values'), ('new text', 'new value'))
+
+    def test_inline_translation(self):
+        # Given a dialog using inline translation
+        with new_dialog(DialogWithTranslation) as dlg:
+            dlg.pump_events()
+            # Then label has a text
+            self.assertEqual(dlg.my_label.cget('text'), "Create")
+            # When updating the property
+            dlg.create.value = 0
+            # Then label has a text
+            self.assertEqual(dlg.my_label.cget('text'), "Save")
 
     def test_computed_property_setter(self):
         # Given a dialog with a combobox

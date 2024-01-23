@@ -20,7 +20,8 @@ except ImportError:
         return message
 
 
-EMPTY_GLOBALS = {}
+# Expose translation
+EMPTY_GLOBALS = {'_': gettext, 'gettext': gettext}
 
 
 def _eval_func(expr, context):
