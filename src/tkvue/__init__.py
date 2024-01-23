@@ -219,11 +219,9 @@ class computed_property(Observable):
 
     _tkvue_expose = True
 
-    def __init__(self, fget, fset=None) -> None:
+    def __init__(self, fget) -> None:
         assert callable(fget), 'computed_property expect a function'
-        assert fset is None or callable(fset), 'fset expect a function'
         self.fget = fget
-        self.fset = fset
 
     def __set_name__(self, owner, name):
         self._name = name
@@ -232,8 +230,7 @@ class computed_property(Observable):
         if instance is None:
             return self
         fget = functools.partial(self.fget, instance)
-        fset = functools.partial(self.fset, instance) if self.fset else None
-        return_instance = computed_property(fget, fset)
+        return_instance = computed_property(fget)
         instance.__dict__[self._name] = return_instance
         return return_instance
 
@@ -261,14 +258,6 @@ class computed_property(Observable):
         self._value = return_value
         return return_value
 
-    @value.setter
-    def value(self, value):
-        assert self.fset is not None
-        try:
-            self.fset(value)
-        except Exception:
-            raise ValueError('error setting computed_property with new value: %s' % value)
-
     def _dependency_change(self, unused_new_value):
         """When our dependencies get updated, make our self dirty and notify our watchers."""
         self._dirty = True
@@ -279,7 +268,33 @@ class computed_property(Observable):
 
     def setter(self, fset):
         """Decorator to provide a setter"""
-        return computed_property(self.fget, fset)
+        return computed_property_writable(self.fget, fset)
+
+
+class computed_property_writable(computed_property):
+    def __init__(self, fget, fset=None) -> None:
+        assert callable(fget), 'computed_property expect a function'
+        assert fset is None or callable(fset), 'fset expect a function'
+        self.fget = fget
+        self.fset = fset
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        fget = functools.partial(self.fget, instance)
+        fset = functools.partial(self.fset, instance)
+        return_instance = computed_property_writable(fget, fset)
+        instance.__dict__[self._name] = return_instance
+        return return_instance
+
+    @computed_property.value.setter
+    def value(self, value):
+        if self.fset is None:
+            raise AttributeError("this computed property is read-only")
+        try:
+            self.fset(value)
+        except Exception:
+            raise ValueError('error setting computed_property with new value: %s' % value)
 
 
 class state(Observable):

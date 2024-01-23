@@ -78,7 +78,7 @@ class DataTest(unittest.TestCase):
         var1 = tkvue.state(1)
         var2 = tkvue.state(2)
         # Create getter setter computed property
-        sum = tkvue.computed_property(
+        sum = tkvue.computed_property_writable(
             lambda: var1.value + var2.value, lambda value: setattr(var1, 'value', value - var2.value)
         )
         self.assertEqual(sum.value, 3)
