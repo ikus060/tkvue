@@ -453,6 +453,17 @@ class DialogWithTranslation(tkvue.Component):
     create = tkvue.state(1)
 
 
+class DialogDestroy(tkvue.Component):
+    template = """
+    <TopLevel>
+        <Frame id="my_frame" pack="{{ 'padx:%s' % padding }}">
+            <Label id="my_label" pack="{{ 'padx:%s' % padding }}" />
+        </Frame>
+    </TopLevel>
+    """
+    padding = tkvue.state(10)
+
+
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
 class ComponentTest(unittest.TestCase):
     def test_open_close(self):
@@ -649,11 +660,16 @@ class ComponentTest(unittest.TestCase):
         with new_dialog(DialogWithLoop) as dlg:
             dlg.items.value = [1, 2, 3, 4]
             dlg.pump_events()
+            # Then we should have 5 subscribers
+            self.assertEqual(5, len(dlg.items._subscribers))
+            # Then we should have 4 children
             self.assertEqual(4, len(dlg.winfo_children()))
             # When removing items
             dlg.items.value = [3, 4]
             dlg.pump_events()
-            # Then widget get created
+            # Then we should have 3 subscribers
+            self.assertEqual(3, len(dlg.items._subscribers))
+            # Then we should have 2 children
             self.assertEqual(2, len(dlg.winfo_children()))
 
     def test_loop_custom_component(self):
@@ -867,3 +883,14 @@ class ComponentTest(unittest.TestCase):
             # Then combobox get updated
             self.assertEqual(dlg.weekday_text.value, 'Friday')
             self.assertEqual(dlg.combobox.get(), 'Friday')
+
+    def test_children_destroy(self):
+        # Given a dialog with a observable on parent and child.
+        with new_dialog(DialogDestroy) as dlg:
+            dlg.pump_events()
+            # Then parent and child observe the state
+            self.assertEqual(2, len(dlg.padding._subscribers))
+            # When deleting child
+            dlg.my_label.destroy()
+            # Then only the frame is subscribe to the state
+            self.assertEqual(1, len(dlg.padding._subscribers))

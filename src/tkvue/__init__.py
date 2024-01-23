@@ -187,12 +187,13 @@ class Observable:
         if getattr(self, '_subscribers', False):
             for func in list(self._subscribers):
                 try:
-                    func(new_value)
+                    if func in self._subscribers:
+                        func(new_value)
                 except Exception:
                     logger.exception("exception when notifying subscriber: %s" % func)
 
     @contextlib.contextmanager
-    def track_dependencies(self):
+    def _track_dependencies(self):
         """
         Used to enable tracking of dependencies.
         """
@@ -211,6 +212,16 @@ class Observable:
         finally:
             # Disable tracking
             local.tracking.remove(self)
+
+    def destroy(self):
+        """Called to destroy this property."""
+        # Unsubscribe from everything.
+        if getattr(self, '_dependencies', False):
+            for d in list(self._dependencies):
+                d.unsubscribe(self._dependency_change)
+            del self._dependencies
+        if getattr(self, '_subscribers', False):
+            del self._subscribers
 
 
 class computed_property(Observable):
@@ -248,7 +259,7 @@ class computed_property(Observable):
             self.accessed()
             return self._value
         # Compute new value
-        with self.track_dependencies():
+        with self._track_dependencies():
             try:
                 return_value = self.fget()
             except Exception:
@@ -336,6 +347,29 @@ class state(Observable):
     def notify(self):
         """Used to manually trigger update of dependencies."""
         self._notify(self.value)
+
+
+#
+# Monkey patch destroy of all widget - it's faster then tk <Destroy> event
+#
+_tkinter_destroy = tkinter.Misc.destroy
+
+
+def _tkvue_destroy(widget):
+    observables = getattr(widget, '_tkvue_observables', [])
+    for obj in observables:
+        obj.destroy()
+    _tkinter_destroy(widget)
+
+
+tkinter.Misc.destroy = _tkvue_destroy
+
+
+def _register_observable(widget, observable):
+    """Register observable with the widget to be destroy."""
+    if not getattr(widget, '_tkvue_observables', False):
+        widget._tkvue_observables = []
+    widget._tkvue_observables.append(observable)
 
 
 def command(obj):
@@ -886,20 +920,22 @@ class Loop:
         # Register our self
         obj = _computed_expression(self.loop_items, context)
         obj.subscribe(self.update_items)
-        # When our parent is destroyed, stop watching
-        self.master.bind("<Destroy>", lambda event, obj=obj: obj.unsubscribe(self.update_items), add="+")
+        _register_observable(self.master, obj)
         # Children shildren
         self.update_items(obj.value)
 
     def create_widget(self, idx):
+        obj = computed_property(_eval_func("%s[%s]" % (self.loop_items, idx), self.context))
         child_context = _Context(
             {
-                self.loop_target: computed_property(_eval_func("%s[%s]" % (self.loop_items, idx), self.context)),
+                self.loop_target: obj,
                 'loop_idx': state(idx),
             },
             parent=self.context,
         )
-        return self.widget_factory(master=self.master, tree=self.tree, context=child_context)
+        widget = self.widget_factory(master=self.master, tree=self.tree, context=child_context)
+        _register_observable(widget, obj)
+        return widget
 
     def update_items(self, items):
         assert hasattr(items, '__len__'), "for loop doesn't support type %s, make sure `%s` return a list()" % (
@@ -1186,17 +1222,12 @@ class Component:
                 update_func = setter
             # Register observer
             obj.subscribe(update_func)
+            _register_observable(widget, obj)
             # Assign the value
             if dual:
                 setter(var)
             else:
                 setter(obj.value)
-            # Handle disposal
-            widget.bind(
-                "<Destroy>",
-                lambda event, obj=obj, update_func=update_func: obj.unsubscribe(update_func),
-                add="+",
-            )
         else:
             # Plain value with evaluation.
             setter(value)
