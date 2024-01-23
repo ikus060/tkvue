@@ -333,6 +333,10 @@ class state(Observable):
         if old_value != new_value:
             self._notify(new_value)
 
+    def notify(self):
+        """Used to manually trigger update of dependencies."""
+        self._notify(self.value)
+
 
 def command(obj):
     """
@@ -1169,7 +1173,7 @@ class Component:
                 # Make sure the observable is not readonly.
                 assert getattr(
                     type(obj).value, 'fset', False
-                ), f'{attr_name} attribute only support dual binding and required a state(). computed_property() or expression are not supported: f{value}'
+                ), f'{attr_name} attribute only support dual binding, expecting state() or computed_property() with setter: {value}'
                 # Create a Tkinter variable to bind with.
                 VarClass = _VARTYPES.get(type(initial_value), tkinter.StringVar)
                 var = VarClass(master=real_widget, value=initial_value)
