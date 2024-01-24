@@ -25,11 +25,34 @@ EMPTY_GLOBALS = {'_': gettext, 'gettext': gettext}
 
 
 def _eval_func(expr, context):
-    """
-    Create a function to execute eval() within the given context
-    """
+    """Create a function to execute eval() within the given context"""
     assert isinstance(expr, str), 'expect an expression'
-    func = functools.partial(eval, expr, EMPTY_GLOBALS, context)
+
+    def func():
+        return eval(expr, EMPTY_GLOBALS, context)
+
+    func.__expr__ = expr
+    return func
+
+
+def _exec_setter(expr, context):
+    """Create a function to execute exec() within the given context"""
+    assert isinstance(expr, str), 'expect an expression'
+
+    def func(value):
+        exec(f"{expr} = __value__", dict(EMPTY_GLOBALS, __value__=value), context)
+
+    func.__expr__ = expr
+    return func
+
+
+def _exec_func(expr, context):
+    """Create a function to execute exec() within the given context"""
+    assert isinstance(expr, str), 'expect an expression'
+
+    def func():
+        exec(f"{expr}", EMPTY_GLOBALS, context)
+
     func.__expr__ = expr
     return func
 
@@ -79,10 +102,8 @@ _default_theme_source = None
 _default_theme_callback = None
 
 
-def _computed_expression(expr, context):
-    """
-    Return an observable object for the given expression.
-    """
+def _computed_expression(expr, context, with_setter=True):
+    """Return an observable object for the given expression."""
     assert isinstance(expr, str), 'expect an expression'
     # Lookup exact expression in context.
     # If observable, return it directly
@@ -92,8 +113,12 @@ def _computed_expression(expr, context):
             return obj
     except KeyError:
         pass
-    # Otherwise, create an observable using eval
-    return computed_property(_eval_func(expr, context))
+    # Otherwise, we can check if the expression seams to be assignable.
+    if with_setter:
+        return computed_property_writable(_eval_func(expr, context), _exec_setter(expr, context))
+    else:
+        # Otherwise, create an observable using eval
+        return computed_property(_eval_func(expr, context))
 
 
 def attr(attr_name, widget_cls=None):
@@ -263,7 +288,7 @@ class computed_property(Observable):
             try:
                 return_value = self.fget()
             except Exception:
-                raise ValueError(
+                raise AttributeError(
                     'error during evaluation of computed_property: %s' % getattr(self.fget, '__expr__', self.fget)
                 )
         self._dirty = False
@@ -306,7 +331,7 @@ class computed_property_writable(computed_property):
         try:
             self.fset(value)
         except Exception:
-            raise ValueError('error setting computed_property with new value: %s' % value)
+            raise AttributeError('error setting computed_property with new value: %s' % value)
 
 
 class state(Observable):
@@ -518,8 +543,8 @@ class _Context:
             return
         # Get previous value for comparaison
         obj = self._map[key]
-        if not hasattr(obj, "value"):
-            raise ValueError("cannot set computed attribute")
+        if callable(obj):
+            raise AttributeError("cannot assign callable")
         obj.value = value
 
     def get(self, key):
@@ -540,7 +565,7 @@ def _create_command(expr, context):
     expr = expr[2:-2].strip()
     # May need to adjust this to detect expression.
     if "(" in expr or "=" in expr:
-        func = _eval_func(expr, context)
+        func = _exec_func(expr, context)
     else:
         try:
             func = context.get(expr)
@@ -630,7 +655,7 @@ for geo, keys in GEO_ATTRS.items():
                 if key not in keys:
                     raise ValueError('unexpected %s geometry manager attribute: %s' % (geo, key))
         else:
-            raise ValueError('unsupported geometry manager value type: %s' % value)
+            raise TypeError('unsupported geometry manager value type: %s' % value)
         widget._tkvue_geo_attrs = value
         # If registered, call the geometry manager
         if getattr(widget, '_tkvue_register', False):
@@ -1198,10 +1223,10 @@ class Component:
         elif value.startswith("{{") and value.endswith("}}"):
             # Truncate curly braquet {{ }}
             value = value[2:-2].strip()
-            # Create an observable from the expression
-            obj = _computed_expression(value, context)
             # Check if dual data binding should be put in place.
             dual = attr_name.endswith('variable')
+            # Create an observable from the expression
+            obj = _computed_expression(value, context, with_setter=dual)
             # Evaluate expression a first time to get the variable type.
             if dual:
                 # Resolve value first, to raise any exception.

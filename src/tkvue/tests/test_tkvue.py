@@ -334,6 +334,15 @@ class DialogWithBindingCommand(tkvue.Component):
         pass
 
 
+class DialogWithAssignCommand(tkvue.Component):
+    template = """
+    <TopLevel>
+        <Button id="my_button" text="foo" selected="True" command="{{foo += 1}}"/>
+    </TopLevel>
+    """
+    foo = tkvue.state(1)
+
+
 class DialogNotResizable(tkvue.Component):
     template = """
     <TopLevel geometry="322x261" resizable="False False">
@@ -462,6 +471,21 @@ class DialogDestroy(tkvue.Component):
     </TopLevel>
     """
     padding = tkvue.state(10)
+
+
+class DialogWithComputedPropertySetter(tkvue.Component):
+    template = """
+    <TopLevel>
+        <Checkbutton id="mon" text="Monday" variable="{{ignore_weekday[0]}}" />
+        <Checkbutton id="tue" text="Tuesday" variable="{{ignore_weekday[1]}}"  />
+        <Checkbutton id="wed" text="Wednesday" variable="{{ignore_weekday[2]}}"  />
+        <Checkbutton id="thu" text="Thrusday" variable="{{ignore_weekday[3]}}" />
+        <Checkbutton id="fri" text="Friday" variable="{{ignore_weekday[4]}}" />
+        <Checkbutton id="sat" text="Satursday" variable="{{ignore_weekday[5]}}" />
+        <Checkbutton id="sun" text="Sunday" variable="{{ignore_weekday[6]}}" />
+    </TopLevel>
+    """
+    ignore_weekday = tkvue.state([False, False, False, False, False, True, True])
 
 
 @unittest.skipIf(IS_LINUX and NO_DISPLAY, "cannot run this without display")
@@ -728,6 +752,16 @@ class ComponentTest(unittest.TestCase):
                 dlg.pump_events()
         self.assertIn('command', str(ctx.exception))
 
+    def test_command_with_assign(self):
+        # Given a dialog with command with assignment
+        with new_dialog(DialogWithAssignCommand) as dlg:
+            dlg.pump_events()
+            self.assertEqual(1, dlg.foo.value)
+            # When user click on button
+            dlg.my_button.invoke()
+            # Then value get increase
+            self.assertEqual(2, dlg.foo.value)
+
     def test_command_with_arguments(self):
         # Given a dialog with a command with arguments
         with new_dialog(Dialog) as dlg:
@@ -894,3 +928,21 @@ class ComponentTest(unittest.TestCase):
             dlg.my_label.destroy()
             # Then only the frame is subscribe to the state
             self.assertEqual(1, len(dlg.padding._subscribers))
+
+    def test_computed_property_expr_setter(self):
+        # Given a gialos with computed property supporting setter.
+        with new_dialog(DialogWithComputedPropertySetter) as dlg:
+            dlg.pump_events()
+            # Check if all checkbox are property set.
+            self.assertEqual(tuple(), dlg.mon.state())
+            self.assertEqual(tuple(), dlg.tue.state())
+            self.assertEqual(tuple(), dlg.wed.state())
+            self.assertEqual(tuple(), dlg.thu.state())
+            self.assertEqual(tuple(), dlg.fri.state())
+            self.assertEqual(('selected',), dlg.sat.state())
+            self.assertEqual(('selected',), dlg.sun.state())
+            # When user click on check box.
+            dlg.mon.focus_set()
+            dlg.mon.invoke()
+            # Then the computed property is updated.
+            self.assertEqual(True, dlg.ignore_weekday.value[0])
