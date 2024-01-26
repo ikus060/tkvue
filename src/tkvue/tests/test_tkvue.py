@@ -430,6 +430,31 @@ class DialogWithCombobox(tkvue.Component):
     values = tkvue.state(None)
 
 
+class DialogWithReadonlyCombobox(tkvue.Component):
+    template = """
+    <TopLevel>
+        <Combobox id="combobox" values="1 2 3" readonly="{{readonly}}"/>
+    </TopLevel>
+    """
+    readonly = tkvue.state(1)
+
+
+class DialogWithDisabledWidget(tkvue.Component):
+    template = """
+    <TopLevel>
+        <Label id="label" text="My Label" disabled="{{disabled}}"/>
+        <Entry id="entry" text="My Label" disabled="{{disabled}}"/>
+        <Combobox id="combobox" values="1 2 3" disabled="{{disabled}}"/>
+        <Checkbutton id="checkbutton" disabled="{{disabled}}"/>
+        <Radiobutton id="radiobutton" disabled="{{disabled}}"/>
+        <Button id="button" disabled="{{disabled}}"/>
+        <Spinbox id="spinbox" disabled="{{disabled}}"/>
+        <Scale id="scale" disabled="{{disabled}}" />
+    </TopLevel>
+    """
+    disabled = tkvue.state(1)
+
+
 class DialogWithComputedProperty(tkvue.Component):
     template = """
     <TopLevel>
@@ -886,6 +911,41 @@ class ComponentTest(unittest.TestCase):
             dlg.values.value = value_map.values()
             dlg.pump_events()
             self.assertEqual(dlg.combobox.cget('values'), ('new text', 'new value'))
+
+    def test_combobox_readonly(self):
+        # Given a dialog with a combobox
+        with new_dialog(DialogWithReadonlyCombobox) as dlg:
+            dlg.pump_events()
+            # Then the combobox is readonly.
+            self.assertTrue(dlg.combobox.instate(['readonly']))
+            # When udating the value
+            dlg.readonly.value = 0
+            self.assertFalse(dlg.combobox.instate(['readonly']))
+
+    def test_disabled_widget(self):
+        # Given a dialog with a combobox
+        with new_dialog(DialogWithDisabledWidget) as dlg:
+            dlg.pump_events()
+            # Then the widgets is readonly.
+            self.assertTrue(dlg.label.instate(['disabled']))
+            self.assertTrue(dlg.entry.instate(['disabled']))
+            self.assertTrue(dlg.combobox.instate(['disabled']))
+            self.assertTrue(dlg.checkbutton.instate(['disabled']))
+            self.assertTrue(dlg.radiobutton.instate(['disabled']))
+            self.assertTrue(dlg.button.instate(['disabled']))
+            self.assertTrue(dlg.spinbox.instate(['disabled']))
+            self.assertTrue(dlg.scale.instate(['disabled']))
+            # When updating the value
+            dlg.disabled.value = 0
+            # Then all the state get updated
+            self.assertFalse(dlg.label.instate(['disabled']))
+            self.assertFalse(dlg.entry.instate(['disabled']))
+            self.assertFalse(dlg.combobox.instate(['disabled']))
+            self.assertFalse(dlg.checkbutton.instate(['disabled']))
+            self.assertFalse(dlg.radiobutton.instate(['disabled']))
+            self.assertFalse(dlg.button.instate(['disabled']))
+            self.assertFalse(dlg.spinbox.instate(['disabled']))
+            self.assertFalse(dlg.scale.instate(['disabled']))
 
     def test_inline_translation(self):
         # Given a dialog using inline translation

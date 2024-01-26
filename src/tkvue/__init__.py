@@ -82,8 +82,9 @@ for a in dir(ttk):
     if isinstance(cls, type) and issubclass(cls, tkinter.Widget):
         _widgets[a.lower()] = cls
 
-# Register Canvas
+# Register some tkinter widget: Canvas, Text
 _widgets['canvas'] = tkinter.Canvas
+_widgets['text'] = tkinter.Text
 
 # Map python types to tkinter variable class.
 _VARTYPES = {
@@ -601,6 +602,11 @@ def _configure_command(widget, value):
     _configure(widget, 'command', value)
 
 
+@attr("disabled", ttk.Widget)
+def _configure_disabled(widget, value):
+    widget.state(["disabled" if value else "!disabled"])
+
+
 @attr("visible", tkinter.Widget)
 def _configure_visible(widget, value):
     widget._tkvue_visible = value
@@ -699,12 +705,12 @@ def _configure_text(widget, value):
     _configure(widget, 'text', gettext(value))
 
 
-@attr("readonly", tkinter.Widget)
+@attr("readonly", ttk.Combobox)
 def _configure_readonly(widget, value):
     widget.state(["readonly" if value else "!readonly"])
 
 
-@attr("selected", (ttk.Button, ttk.Checkbutton))
+@attr("selected", (ttk.Button, ttk.Checkbutton, ttk.Radiobutton))
 def _configure_selected(widget, value):
     widget.state(["selected" if value else "!selected", "!alternate"])
 
