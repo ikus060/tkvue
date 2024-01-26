@@ -699,6 +699,11 @@ def _configure_text(widget, value):
     _configure(widget, 'text', gettext(value))
 
 
+@attr("readonly", tkinter.Widget)
+def _configure_readonly(widget, value):
+    widget.state(["readonly" if value else "!readonly"])
+
+
 @attr("selected", (ttk.Button, ttk.Checkbutton))
 def _configure_selected(widget, value):
     widget.state(["selected" if value else "!selected", "!alternate"])
