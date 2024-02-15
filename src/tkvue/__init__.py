@@ -394,7 +394,7 @@ tkinter.Misc.destroy = _tkvue_destroy
 def _register_observable(widget, observable):
     """Register observable with the widget to be destroy."""
     if not getattr(widget, '_tkvue_observables', False):
-        widget._tkvue_observables = []
+        _real_widget(widget)._tkvue_observables = []
     widget._tkvue_observables.append(observable)
 
 
@@ -520,7 +520,13 @@ class _Context:
         """Create a new root context"""
         # Make sure only callable and Observable are included.
         for key, obj in initial_data.items():
-            if not callable(obj) and not _is_observable(obj):
+            # Raise exception when computed property raise an exception.
+            if isinstance(obj, computed_property) and not _is_observable(obj):
+                try:
+                    obj.value
+                except AttributeError:
+                    raise ValueError('computed_property `%s` raise an exception' % key)
+            elif not callable(obj) and not _is_observable(obj):
                 raise ValueError(
                     'context only support observable objects state() and computed_property(): %s = %s' % (key, obj)
                 )
@@ -585,7 +591,7 @@ def _configure(widget, key, value):
     else:
         # Otherwise, store the values
         if not getattr(widget, '_tkvue_configure', False):
-            widget._tkvue_configure = dict()
+            _real_widget(widget)._tkvue_configure = dict()
         widget._tkvue_configure[key] = value
 
 
@@ -609,14 +615,30 @@ def _configure_disabled(widget, value):
 
 @attr("visible", tkinter.Widget)
 def _configure_visible(widget, value):
-    widget._tkvue_visible = value
+    # Update attribute of real widget
+    _real_widget(widget)._tkvue_visible = value
     # Do nothing if the widget is not yet registered.
     if getattr(widget, '_tkvue_register', False):
-        # Show / Hide widget
+        # Check which geometry manager is used by this widget. Default to 'pack'
         cur_geo = getattr(widget, '_tkvue_geo', 'pack')
         if value:
-            # Check which geometry manager is used by this widget. Default to 'pack'
+            # Get geometry configuration.
             attrs = getattr(widget, '_tkvue_geo_attrs', {})
+            # For pack, to keep widget ordering, let determine the previous widget.
+            if cur_geo == 'pack':
+                siblings = list(widget.master.children.values())
+                try:
+                    after = None
+                    idx = siblings.index(widget)
+                    while idx >= 1:
+                        idx = idx - 1
+                        if siblings[idx]._tkvue_visible:
+                            after = siblings[idx]
+                            break
+                    attrs = dict(after=after, **attrs)
+                except ValueError:
+                    pass  # This should never happen.
+            # Make widget visible.
             getattr(widget, cur_geo)(attrs)
         else:
             forget_func = getattr(widget, '%s_forget' % cur_geo)
@@ -639,7 +661,7 @@ for geo, keys in GEO_ATTRS.items():
                 'widget is currently configured with %s geometry manager, conflict with: %s = %s'
                 % (cur_geo, geo, value)
             )
-        widget._tkvue_geo = geo
+        _real_widget(widget)._tkvue_geo = geo
         # Support CSS style key:value; key:value;
         if isinstance(value, str):
             new_value = dict()
@@ -662,7 +684,7 @@ for geo, keys in GEO_ATTRS.items():
                     raise ValueError('unexpected %s geometry manager attribute: %s' % (geo, key))
         else:
             raise TypeError('unsupported geometry manager value type: %s' % value)
-        widget._tkvue_geo_attrs = value
+        _real_widget(widget)._tkvue_geo_attrs = value
         # If registered, call the geometry manager
         if getattr(widget, '_tkvue_register', False):
             getattr(widget, cur_geo)(widget._tkvue_geo_attrs)
@@ -1304,7 +1326,7 @@ class Component:
             delattr(widget, '_tkvue_configure')
         # By default, show the widget.
         if hasattr(widget, 'pack') and not skip_register:
-            widget._tkvue_register = True
+            _real_widget(widget)._tkvue_register = True
             visible = getattr(widget, '_tkvue_visible', True)
             _configure_visible(widget, visible)
         return widget

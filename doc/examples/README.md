@@ -87,6 +87,12 @@ The pack geometry manager is a layout manager in Tkinter/TTK that allows you to 
 
 ![](pack.png)
 
+## place.py
+
+The place geometry manager allows you to precisely position widgets within a container using absolute or relative coordinates.
+
+![](place.png)
+
 ## progressbar.py
 
 This is an examples to illustrate how to use the [`ProgressBar`](https://anzeljg.github.io/rin2/book2/2405/docs/tkinter/ttk-Progressbar.html) widget and animate it using `asyncio`.
