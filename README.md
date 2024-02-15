@@ -93,6 +93,7 @@ Other Tkinter-related projects worth mentioning:
 * `@tkvue.computed_property()` should be used to register observable computed property with cache support.
 * `@tkvue.command` should be used to register functions.
 * `tkvue.state()` should be used to register observable state.
+* Keep track of widget ordering when visibility get toggle with pack geometry manager. 
 
 ## 2.1.6 (2023-01-07)
 
